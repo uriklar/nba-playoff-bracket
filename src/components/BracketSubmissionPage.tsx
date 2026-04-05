@@ -1,6 +1,7 @@
 import React from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import BracketDisplay from "./BracketDisplay";
+import ScoringInfo from "./ScoringInfo";
 import { useBracketSubmission } from "../hooks/useBracketSubmission";
 
 const BracketSubmissionPage: React.FC = () => {
@@ -38,6 +39,10 @@ const BracketSubmissionPage: React.FC = () => {
       {/* Main Content */}
       <main className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
+          <div className="max-w-7xl mx-auto">
+            <ScoringInfo />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* User Information Card */}
             <section className="bg-white rounded-xl shadow-custom p-6 border border-secondary/30 max-w-7xl mx-auto">

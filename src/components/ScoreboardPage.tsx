@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import BracketDisplay from "./BracketDisplay";
+import ScoringInfo from "./ScoringInfo";
 import { getGroupById, type Group } from "../utils/db";
 import bracketData from "../data/playoffBracketTemplate.json";
 import {
@@ -366,6 +367,8 @@ const ScoreboardPage: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      <ScoringInfo />
+
       {/* Scoreboard Section */}
       <section className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
