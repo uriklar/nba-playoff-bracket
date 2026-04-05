@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link, useParams } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import JoinRedirectPage from "./pages/JoinRedirectPage";
 import ScoreboardPage from "./components/ScoreboardPage";
 import BracketSubmissionPage from "./components/BracketSubmissionPage";
 import ViewBracketPage from "./pages/ViewBracketPage";
@@ -62,6 +63,7 @@ function App() {
       <div className="min-h-screen bg-[#f8f5fd]">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/join/:code" element={<JoinRedirectPage />} />
           <Route path="/g/:groupId/*" element={<GroupLayout />} />
         </Routes>
       </div>

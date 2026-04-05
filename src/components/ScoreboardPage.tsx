@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import BracketDisplay from "./BracketDisplay";
 import { getGroupById, type Group } from "../utils/db";
@@ -27,6 +27,24 @@ const ScoreboardPage: React.FC = () => {
   const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
   const [showScoringModal, setShowScoringModal] = useState<boolean>(false);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [copiedInvite, setCopiedInvite] = useState(false);
+
+  const handleCopyInviteLink = useCallback(async () => {
+    if (!group) return;
+    const link = `${window.location.origin}/join/${group.join_code}`;
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = link;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setCopiedInvite(true);
+    setTimeout(() => setCopiedInvite(false), 2000);
+  }, [group]);
 
   // Extract unique team names from the bracket data for the dropdown
   const allTeams = React.useMemo(() => {
@@ -351,17 +369,26 @@ const ScoreboardPage: React.FC = () => {
     <div className="space-y-8">
       {/* Scoreboard Section */}
       <section className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-[#1a1a1d]">
-              {group ? group.name : "Scoreboard"}
-            </h2>
-            {group && (
-              <p className="text-sm text-primary/60 mt-1">
-                Join code: <span className="font-mono font-semibold tracking-wider">{group.join_code}</span>
-              </p>
-            )}
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h2 className="text-2xl font-bold text-[#1a1a1d]">
+            {group ? group.name : "Scoreboard"}
+          </h2>
+          {group && (
+            <div className="flex items-center gap-3 bg-[#f8f5fd] rounded-lg px-4 py-2">
+              <div className="text-xs text-primary/50 uppercase tracking-wider leading-none">
+                Join Code
+              </div>
+              <div className="font-mono font-bold text-lg tracking-[0.2em] text-primary">
+                {group.join_code}
+              </div>
+              <button
+                onClick={handleCopyInviteLink}
+                className="text-xs font-medium text-accent hover:text-accent/80 transition-colors whitespace-nowrap"
+              >
+                {copiedInvite ? "Copied!" : "Copy Link"}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Team Selector */}

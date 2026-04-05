@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createGroup, getGroupByJoinCode } from "../utils/db";
+import { createGroup, getGroupByJoinCode, type Group } from "../utils/db";
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -9,6 +9,8 @@ const LandingPage: React.FC = () => {
   const [groupName, setGroupName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createdGroup, setCreatedGroup] = useState<Group | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Join group state
   const [joinCode, setJoinCode] = useState("");
@@ -24,7 +26,7 @@ const LandingPage: React.FC = () => {
 
     const group = await createGroup(groupName.trim());
     if (group) {
-      navigate(`/g/${group.id}/submit`);
+      setCreatedGroup(group);
     } else {
       setCreateError("Failed to create group. Please try again.");
     }
@@ -40,12 +42,110 @@ const LandingPage: React.FC = () => {
 
     const group = await getGroupByJoinCode(joinCode.trim());
     if (group) {
-      navigate(`/g/${group.id}`);
+      navigate(`/g/${group.id}/submit`);
     } else {
       setJoinError("Group not found. Check your code and try again.");
     }
     setIsJoining(false);
   };
+
+  const inviteLink = createdGroup
+    ? `${window.location.origin}/join/${createdGroup.join_code}`
+    : "";
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = inviteLink;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Post-creation interstitial
+  if (createdGroup) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
+        <div className="bg-white rounded-xl shadow-custom p-8 border border-secondary/30 max-w-md w-full text-center">
+          <div className="mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
+              <svg
+                className="w-8 h-8 text-accent"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-primary font-montserrat">
+              {createdGroup.name}
+            </h2>
+            <p className="text-primary/60 font-inter mt-1">
+              Group created! Share the code so others can join.
+            </p>
+          </div>
+
+          {/* Join Code */}
+          <div className="bg-background rounded-lg p-4 mb-4">
+            <p className="text-xs text-primary/50 font-inter uppercase tracking-wider mb-1">
+              Join Code
+            </p>
+            <p className="text-4xl font-mono font-bold tracking-[0.3em] text-primary">
+              {createdGroup.join_code}
+            </p>
+          </div>
+
+          {/* Copy Invite Link */}
+          <button
+            onClick={handleCopyLink}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg
+                     border border-secondary/50 text-primary/80 hover:bg-background
+                     transition duration-200 font-inter mb-6"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+            {copied ? "Copied!" : "Copy Invite Link"}
+          </button>
+
+          {/* Continue CTA */}
+          <button
+            onClick={() => navigate(`/g/${createdGroup.id}/submit`)}
+            className="w-full px-4 py-3 text-sm font-medium rounded-lg text-white
+                     bg-accent hover:bg-accent/90 focus:outline-none focus:ring-2
+                     focus:ring-offset-2 focus:ring-accent transition duration-200 font-inter"
+          >
+            Continue to Fill Your Bracket
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
