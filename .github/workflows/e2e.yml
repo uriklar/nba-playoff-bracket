@@ -31,7 +31,7 @@ jobs:
         run: pnpm test:e2e
         env:
           VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_ANON_KEY: placeholder-key
+          VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY: placeholder-key
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
