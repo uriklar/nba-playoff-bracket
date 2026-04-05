@@ -11,7 +11,7 @@ function GroupNav() {
       <div className="container mx-auto flex justify-between items-center py-4 px-4">
         <Link to="/" className="flex items-center">
           <img
-            src="/hb-ball.png"
+            src="/basketball.svg"
             alt="NBA Bracket Challenge Logo"
             className="h-12 w-12 object-contain"
           />

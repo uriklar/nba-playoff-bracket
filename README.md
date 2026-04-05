@@ -1,6 +1,6 @@
-# HoneyBook NBA Playoff Bracket Challenge
+# NBA Playoff Bracket Challenge
 
-An internal bracket prediction app for HoneyBook employees to compete by picking NBA playoff series winners and lengths. Built with React + TypeScript + Vite + Tailwind, backed by Supabase, and deployed on Vercel.
+A bracket prediction app to compete by picking NBA playoff series winners and lengths. Built with React + TypeScript + Vite + Tailwind, backed by Supabase, and deployed on Vercel.
 
 ## Getting Started
 
@@ -14,7 +14,7 @@ An internal bracket prediction app for HoneyBook employees to compete by picking
 ```
 .
 ├── public/
-│   ├── hb-ball.png                     # HoneyBook logo used in the nav
+│   ├── basketball.svg                   # Basketball icon used in the nav/favicon
 │   └── vite.svg
 │
 ├── src/

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="48" fill="#ee6730" stroke="#c4521e" stroke-width="2.5"/>
+  <!-- Horizontal line -->
+  <path d="M2,50 Q50,50 98,50" fill="none" stroke="#1a1a1d" stroke-width="2.2"/>
+  <!-- Vertical line -->
+  <path d="M50,2 Q50,50 50,98" fill="none" stroke="#1a1a1d" stroke-width="2.2"/>
+  <!-- Left curve -->
+  <path d="M38,3 Q20,50 38,97" fill="none" stroke="#1a1a1d" stroke-width="2"/>
+  <!-- Right curve -->
+  <path d="M62,3 Q80,50 62,97" fill="none" stroke="#1a1a1d" stroke-width="2"/>
+  <!-- Top curve -->
+  <path d="M3,38 Q50,20 97,38" fill="none" stroke="#1a1a1d" stroke-width="2"/>
+  <!-- Bottom curve -->
+  <path d="M3,62 Q50,80 97,62" fill="none" stroke="#1a1a1d" stroke-width="2"/>
+</svg>

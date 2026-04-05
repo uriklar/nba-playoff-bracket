@@ -51,7 +51,7 @@ const LandingPage: React.FC = () => {
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">
       <div className="text-center mb-12">
         <img
-          src="/hb-ball.png"
+          src="/basketball.svg"
           alt="NBA Bracket Challenge"
           className="h-20 w-20 object-contain mx-auto mb-4"
         />
