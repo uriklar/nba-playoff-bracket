@@ -29,14 +29,13 @@ const ScoreboardPage: React.FC = () => {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [copiedInvite, setCopiedInvite] = useState(false);
 
-  const handleCopyInviteLink = useCallback(async () => {
+  const handleCopyJoinCode = useCallback(async () => {
     if (!group) return;
-    const link = `${window.location.origin}/join/${group.join_code}`;
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(group.join_code);
     } catch {
       const textarea = document.createElement("textarea");
-      textarea.value = link;
+      textarea.value = group.join_code;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
@@ -382,10 +381,10 @@ const ScoreboardPage: React.FC = () => {
                 {group.join_code}
               </div>
               <button
-                onClick={handleCopyInviteLink}
+                onClick={handleCopyJoinCode}
                 className="text-xs font-medium text-accent hover:text-accent/80 transition-colors whitespace-nowrap"
               >
-                {copiedInvite ? "Copied!" : "Copy Link"}
+                {copiedInvite ? "Copied!" : "Copy Code"}
               </button>
             </div>
           )}
