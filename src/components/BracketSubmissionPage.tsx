@@ -1,10 +1,12 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import BracketDisplay from "./BracketDisplay";
 import { useBracketSubmission } from "../hooks/useBracketSubmission";
 
 const BracketSubmissionPage: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
+  const [searchParams] = useSearchParams();
+  const isDebug = searchParams.has("debug");
   const {
     userName,
     displayedGames,
@@ -14,6 +16,7 @@ const BracketSubmissionPage: React.FC = () => {
     handleNameChange,
     handleGuessChange,
     handleSubmit,
+    fillRandomBracket,
   } = useBracketSubmission(groupId!);
 
   return (
@@ -60,6 +63,16 @@ const BracketSubmissionPage: React.FC = () => {
                              transition duration-200"
                   />
                 </label>
+                {isDebug && (
+                  <button
+                    type="button"
+                    onClick={fillRandomBracket}
+                    className="mt-2 px-4 py-2 text-sm font-medium rounded-lg text-white
+                             bg-orange-500 hover:bg-orange-600 transition duration-200 font-inter"
+                  >
+                    Fill Random Bracket
+                  </button>
+                )}
               </div>
             </section>
 

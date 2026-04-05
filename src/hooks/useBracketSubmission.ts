@@ -50,6 +50,7 @@ export interface UseBracketSubmissionReturn {
     selectedGames: number | null
   ) => void;
   handleSubmit: (event: React.FormEvent) => Promise<void>;
+  fillRandomBracket: () => void;
 }
 
 export const useBracketSubmission = (
@@ -197,6 +198,35 @@ export const useBracketSubmission = (
     }
   };
 
+  const fillRandomBracket = () => {
+    const games: Game[] = JSON.parse(JSON.stringify(bracketData.games));
+    const newGuesses: Guesses = {};
+    const rounds = [1, 2, 3, 4];
+
+    for (const round of rounds) {
+      const roundGames = games.filter((g) => g.round === round);
+      for (const game of roundGames) {
+        const winner = Math.random() < 0.5 ? game.team1 : game.team2;
+        const inGames = Math.floor(Math.random() * 4) + 4; // 4-7
+        newGuesses[game.gameId] = { winner, inGames };
+
+        // Propagate winner to next round
+        if (game.nextGameId) {
+          const nextGame = games.find((g) => g.gameId === game.nextGameId)!;
+          const feeders = games
+            .filter((g) => g.nextGameId === game.nextGameId)
+            .sort((a, b) => a.matchup - b.matchup);
+          const slotIndex = feeders.findIndex((g) => g.gameId === game.gameId);
+          if (slotIndex === 0) nextGame.team1 = winner;
+          else nextGame.team2 = winner;
+        }
+      }
+    }
+
+    setDisplayedGames(games);
+    setGuesses(newGuesses);
+  };
+
   return {
     userName,
     displayedGames,
@@ -206,5 +236,6 @@ export const useBracketSubmission = (
     handleNameChange,
     handleGuessChange,
     handleSubmit,
+    fillRandomBracket,
   };
 };
