@@ -29,7 +29,6 @@ export interface Guesses {
 }
 
 interface SubmissionData {
-  userId: string;
   guess: {
     [gameId: string]: {
       winner: string;
@@ -53,7 +52,9 @@ export interface UseBracketSubmissionReturn {
   handleSubmit: (event: React.FormEvent) => Promise<void>;
 }
 
-export const useBracketSubmission = (): UseBracketSubmissionReturn => {
+export const useBracketSubmission = (
+  groupId: string
+): UseBracketSubmissionReturn => {
   const [userName, setUserName] = useState<string>("");
   const [displayedGames, setDisplayedGames] = useState<Game[]>(() =>
     JSON.parse(JSON.stringify(bracketData.games))
@@ -162,7 +163,6 @@ export const useBracketSubmission = (): UseBracketSubmissionReturn => {
     }
 
     const submissionPayload: SubmissionData = {
-      userId: userName.trim(),
       guess: {},
     };
 
@@ -180,7 +180,7 @@ export const useBracketSubmission = (): UseBracketSubmissionReturn => {
 
     try {
       const result = await upsertSubmission(
-        userName.trim(),
+        groupId,
         userName.trim(),
         submissionPayload.guess
       );

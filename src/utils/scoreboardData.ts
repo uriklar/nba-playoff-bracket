@@ -1,6 +1,5 @@
 import { getOfficialResults, getSubmissions } from "./db";
 import { calculateScore, calculatePotentialPoints } from "./scoring";
-import { guesses as staticGuesses } from "../data/guesses";
 
 // Types
 export interface Team {
@@ -42,6 +41,7 @@ export interface ScoreboardEntry {
   name: string;
   score: number | null;
   potentialPoints: number | null;
+  bracket: RawUserGuess | null;
   status: "loading" | "loaded" | "error" | "pending";
   error?: string;
 }
@@ -68,48 +68,18 @@ export const sortScoreboardEntries = (
   return a.name.localeCompare(b.name);
 };
 
-// Static Mode Functions
-export const loadStaticScoreboard = async (
-  results: OfficialResults
-): Promise<ScoreboardEntry[]> => {
-  const entries = Object.entries(staticGuesses).map(
-    ([name, guess]): ScoreboardEntry => {
-      try {
-        console.log(`-----------------------${name}-----------------------`);
-        const score = calculateScore(guess, results);
-        const potentialPoints = calculatePotentialPoints(guess, results);
-        console.log(`-----------------------${name}-----------------------`);
-        return {
-          userId: name,
-          name,
-          score,
-          potentialPoints,
-          status: "loaded",
-        };
-      } catch (error) {
-        return {
-          userId: name,
-          name,
-          score: null,
-          potentialPoints: null,
-          status: "error",
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-    }
-  );
-
-  return entries.sort(sortScoreboardEntries);
-};
-
-// Dynamic Mode Functions
-export const loadDynamicScoreboard = async (): Promise<{
+/**
+ * Load the scoreboard for a specific group.
+ */
+export const loadScoreboard = async (
+  groupId: string
+): Promise<{
   scoreboard: ScoreboardEntry[];
   results: OfficialResults;
 }> => {
   const [results, submissions] = await Promise.all([
     getOfficialResults(),
-    getSubmissions(),
+    getSubmissions(groupId),
   ]);
 
   if (!results) {
@@ -117,7 +87,7 @@ export const loadDynamicScoreboard = async (): Promise<{
   }
 
   if (!submissions || submissions.length === 0) {
-    throw new Error("No user submissions found.");
+    return { scoreboard: [], results };
   }
 
   const scoreboard: ScoreboardEntry[] = submissions.map((submission) => {
@@ -130,6 +100,7 @@ export const loadDynamicScoreboard = async (): Promise<{
         name: submission.name,
         score,
         potentialPoints,
+        bracket,
         status: "loaded",
       };
     } catch (error) {
@@ -138,6 +109,7 @@ export const loadDynamicScoreboard = async (): Promise<{
         name: submission.name,
         score: null,
         potentialPoints: null,
+        bracket: null,
         status: "error",
         error: error instanceof Error ? error.message : String(error),
       };

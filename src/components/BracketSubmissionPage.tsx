@@ -1,12 +1,10 @@
 import React from "react";
+import { useParams } from "react-router-dom";
 import BracketDisplay from "./BracketDisplay";
 import { useBracketSubmission } from "../hooks/useBracketSubmission";
 
-// Import fonts in your main CSS file or index.html:
-// font-family: 'Inter', sans-serif - for body text
-// font-family: 'Montserrat', sans-serif - for headings
-
 const BracketSubmissionPage: React.FC = () => {
+  const { groupId } = useParams<{ groupId: string }>();
   const {
     userName,
     displayedGames,
@@ -16,7 +14,7 @@ const BracketSubmissionPage: React.FC = () => {
     handleNameChange,
     handleGuessChange,
     handleSubmit,
-  } = useBracketSubmission();
+  } = useBracketSubmission(groupId!);
 
   return (
     <div className="min-h-screen bg-background">

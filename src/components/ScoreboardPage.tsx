@@ -1,26 +1,24 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import BracketDisplay from "./BracketDisplay";
-import { getOfficialResults } from "../utils/db";
+import { getGroupById, type Group } from "../utils/db";
 import bracketData from "../data/playoffBracketTemplate.json";
 import {
-  loadStaticScoreboard,
-  loadDynamicScoreboard,
+  loadScoreboard,
   type ScoreboardEntry,
   type OfficialResults,
   type Game,
   type Guess,
   type Team,
 } from "../utils/scoreboardData";
-import { guesses as staticGuesses } from "../data/guesses";
-
-// Configuration
-const ENABLE_SCORE_FETCHING = false; // Set to true to enable fetching individual scores
 
 interface Guesses {
   [gameId: string]: Guess;
 }
 
 const ScoreboardPage: React.FC = () => {
+  const { groupId } = useParams<{ groupId: string }>();
+  const [group, setGroup] = useState<Group | null>(null);
   const [isLoadingResults, setIsLoadingResults] = useState<boolean>(true);
   const [errorResults, setErrorResults] = useState<string | null>(null);
   const [resultsGames, setResultsGames] = useState<Game[]>([]);
@@ -34,8 +32,8 @@ const ScoreboardPage: React.FC = () => {
   const allTeams = React.useMemo(() => {
     const teams = new Set<string>();
     bracketData.games
-      .filter(game => game.round === 1) // Only use first round games to get actual team names
-      .forEach(game => {
+      .filter((game) => game.round === 1)
+      .forEach((game) => {
         if (game.team1.name !== "TBD") teams.add(game.team1.name);
         if (game.team2.name !== "TBD") teams.add(game.team2.name);
       });
@@ -98,33 +96,91 @@ const ScoreboardPage: React.FC = () => {
     setResultsGuesses(derivedGuesses);
   };
 
-  // Effect: Load data based on mode
+  // Find where a user predicted a team would exit
+  const findTeamExitPrediction = (
+    entry: ScoreboardEntry,
+    teamName: string
+  ): string => {
+    if (!teamName || !entry.bracket) return "No pick";
+
+    const userGuesses = entry.bracket;
+
+    // Check if the user picked this team to win the Finals
+    const finalsGuess = userGuesses.Finals;
+    if (finalsGuess?.winner === teamName) {
+      return "Champion";
+    }
+
+    const roundAbbr: Record<number, string> = {
+      1: "R1",
+      2: "CONF SF",
+      3: "CONF F",
+      4: "FINALS",
+    };
+
+    const firstRoundGames = bracketData.games.filter(
+      (game) => game.round === 1
+    );
+    const startingGame = firstRoundGames.find(
+      (game) => game.team1.name === teamName || game.team2.name === teamName
+    );
+
+    if (!startingGame) return "No pick";
+
+    const startingGameId = startingGame.gameId;
+    const guessForStartingGame = userGuesses[startingGameId];
+
+    if (!guessForStartingGame || guessForStartingGame.winner !== teamName) {
+      if (!guessForStartingGame) return "No pick";
+      return `Lost in ${roundAbbr[1]}`;
+    }
+
+    let currentGameId = startingGameId;
+    let currentRound = 1;
+
+    while (true) {
+      const currentGame = bracketData.games.find(
+        (game) => game.gameId === currentGameId
+      );
+      if (!currentGame) break;
+
+      if (!currentGame.nextGameId) {
+        return `Lost in ${roundAbbr[4]}`;
+      }
+
+      const nextGameId = currentGame.nextGameId;
+      const nextRound = currentRound + 1;
+      const nextGameGuess = userGuesses[nextGameId];
+
+      if (!nextGameGuess || nextGameGuess.winner !== teamName) {
+        return `Lost in ${roundAbbr[nextRound]}`;
+      }
+
+      currentGameId = nextGameId;
+      currentRound = nextRound;
+    }
+
+    return "No pick";
+  };
+
+  // Effect: Load data
   useEffect(() => {
+    if (!groupId) return;
+
     const loadData = async () => {
       setIsLoadingResults(true);
       setErrorResults(null);
 
       try {
-        if (ENABLE_SCORE_FETCHING) {
-          // Dynamic mode - fetch from JSONBin
-          const { scoreboard, results } = await loadDynamicScoreboard();
-          setOfficialResults(results);
-          processResultsForDisplay(results);
-          setScoreboard(scoreboard);
-        } else {
-          // Static mode - load from file
-          const results = await getOfficialResults();
-          if (!results) {
-            throw new Error("Could not fetch official results.");
-          }
+        const [groupData, { scoreboard: sb, results }] = await Promise.all([
+          getGroupById(groupId),
+          loadScoreboard(groupId),
+        ]);
 
-          setOfficialResults(results);
-          processResultsForDisplay(results);
-
-          // Load and calculate static scores
-          const staticScoreboard = await loadStaticScoreboard(results);
-          setScoreboard(staticScoreboard);
-        }
+        setGroup(groupData);
+        setOfficialResults(results);
+        processResultsForDisplay(results);
+        setScoreboard(sb);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         console.error("Error loading data:", err);
@@ -135,151 +191,151 @@ const ScoreboardPage: React.FC = () => {
     };
 
     loadData();
-  }, []);
-
-  // Find where a user predicted a team would exit
-  const findTeamExitPrediction = (userId: string, teamName: string): string => {
-    if (!teamName) return "No pick";
-    
-    const userGuesses = (staticGuesses as Record<string, any>)[userId];
-    if (!userGuesses) return "No pick";
-    
-    // Check if the user picked this team to win the Finals (champion)
-    const finalsGuess = userGuesses.Finals;
-    if (finalsGuess?.winner === teamName) {
-      return `Champion`;
-    }
-
-    // Map rounds to display abbreviations
-    const roundAbbr: Record<number, string> = {
-      1: "R1",
-      2: "CONF SF",
-      3: "CONF F",
-      4: "FINALS"
-    };
-
-    // Check first round games to find the team's starting point
-    const firstRoundGames = bracketData.games.filter(game => game.round === 1);
-    const startingGame = firstRoundGames.find(
-      game => game.team1.name === teamName || game.team2.name === teamName
-    );
-    
-    if (!startingGame) return "No pick"; // Team not in first round
-    
-    const startingGameId = startingGame.gameId;
-    const guessForStartingGame = userGuesses[startingGameId];
-    
-    // If team lost in first round
-    if (!guessForStartingGame || guessForStartingGame.winner !== teamName) {
-      if (!guessForStartingGame) return "No pick";
-      return `Lost in ${roundAbbr[1]}`;
-    }
-    
-    // Track team's path through bracket
-    let currentGameId = startingGameId;
-    let currentRound = 1;
-    
-    // Loop until we find where team gets eliminated
-    while (true) {
-      const currentGame = bracketData.games.find(game => game.gameId === currentGameId);
-      if (!currentGame) break;
-      
-      if (!currentGame.nextGameId) {
-        // Reached finals and already checked if they won
-        return `Lost in ${roundAbbr[4]}`;
-      }
-      
-      const nextGameId = currentGame.nextGameId;
-      const nextRound = currentRound + 1;
-      const nextGameGuess = userGuesses[nextGameId];
-      
-      // Team didn't advance to next round or no prediction made
-      if (!nextGameGuess || nextGameGuess.winner !== teamName) {
-        return `Lost in ${roundAbbr[nextRound]}`;
-      }
-      
-      // Team won this round, move to next round
-      currentGameId = nextGameId;
-      currentRound = nextRound;
-    }
-    
-    return "No pick"; // Should only reach here if data is incomplete
-  };
+  }, [groupId]);
 
   // Scoring formula modal component
   const ScoringFormulaModal = () => {
     if (!showScoringModal) return null;
-    
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 shadow-xl">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-gray-800">Playoff Scoring Formula</h3>
-            <button 
+            <h3 className="text-xl font-bold text-gray-800">
+              Playoff Scoring Formula
+            </h3>
+            <button
               onClick={() => setShowScoringModal(false)}
               className="text-gray-600 hover:text-gray-800"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
           </div>
-          
+
           <div className="space-y-4">
-            <p className="text-gray-700">Points are awarded for correctly predicting winners and series length in each round:</p>
-            
+            <p className="text-gray-700">
+              Points are awarded for correctly predicting winners and series
+              length in each round:
+            </p>
+
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-4 py-2 text-left">Playoff Round</th>
-                    <th className="border border-gray-300 px-4 py-2 text-center">Correct Winner</th>
-                    <th className="border border-gray-300 px-4 py-2 text-center">Correct Series Length</th>
-                    <th className="border border-gray-300 px-4 py-2 text-center">Max Points Per Series</th>
+                    <th className="border border-gray-300 px-4 py-2 text-left">
+                      Playoff Round
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-center">
+                      Correct Winner
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-center">
+                      Correct Series Length
+                    </th>
+                    <th className="border border-gray-300 px-4 py-2 text-center">
+                      Max Points Per Series
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-gray-300 px-4 py-2 font-medium">First Round</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">8 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">6 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">14 pts</td>
+                    <td className="border border-gray-300 px-4 py-2 font-medium">
+                      First Round
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      8 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      6 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">
+                      14 pts
+                    </td>
                   </tr>
                   <tr className="bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2 font-medium">Conference Semifinals</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">12 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">8 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">20 pts</td>
+                    <td className="border border-gray-300 px-4 py-2 font-medium">
+                      Conference Semifinals
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      12 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      8 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">
+                      20 pts
+                    </td>
                   </tr>
                   <tr>
-                    <td className="border border-gray-300 px-4 py-2 font-medium">Conference Finals</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">16 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">10 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">26 pts</td>
+                    <td className="border border-gray-300 px-4 py-2 font-medium">
+                      Conference Finals
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      16 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      10 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">
+                      26 pts
+                    </td>
                   </tr>
                   <tr className="bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2 font-medium">NBA Finals</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">24 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">12 pts</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">36 pts</td>
+                    <td className="border border-gray-300 px-4 py-2 font-medium">
+                      NBA Finals
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      24 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      12 pts
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 text-center font-medium">
+                      36 pts
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            
+
             <div className="text-gray-700 mt-4">
-              <p className="mb-2"><strong>Notes:</strong></p>
+              <p className="mb-2">
+                <strong>Notes:</strong>
+              </p>
               <ul className="list-disc pl-6 space-y-1">
-                <li>Correct winner points are awarded for predicting the team that wins a series</li>
-                <li>Bonus points are awarded for correctly predicting the exact number of games in the series</li>
-                <li>You must predict the correct winner to be eligible for series length points</li>
-                <li>Points increase with each round to reflect increased difficulty</li>
+                <li>
+                  Correct winner points are awarded for predicting the team that
+                  wins a series
+                </li>
+                <li>
+                  Bonus points are awarded for correctly predicting the exact
+                  number of games in the series
+                </li>
+                <li>
+                  You must predict the correct winner to be eligible for series
+                  length points
+                </li>
+                <li>
+                  Points increase with each round to reflect increased difficulty
+                </li>
               </ul>
             </div>
           </div>
-          
+
           <div className="mt-6 text-right">
-            <button 
+            <button
               onClick={() => setShowScoringModal(false)}
               className="bg-[#5a2ee5] hover:bg-[#4a1ed5] text-white px-4 py-2 rounded"
             >
@@ -295,11 +351,25 @@ const ScoreboardPage: React.FC = () => {
     <div className="space-y-8">
       {/* Scoreboard Section */}
       <section className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-[#1a1a1d] mb-4">Scoreboard</h2>
-        
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-[#1a1a1d]">
+              {group ? group.name : "Scoreboard"}
+            </h2>
+            {group && (
+              <p className="text-sm text-primary/60 mt-1">
+                Join code: <span className="font-mono font-semibold tracking-wider">{group.join_code}</span>
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Team Selector */}
         <div className="mb-6">
-          <label htmlFor="team-selector" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="team-selector"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Select a team to see predictions:
           </label>
           <select
@@ -309,16 +379,25 @@ const ScoreboardPage: React.FC = () => {
             className="block w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#5a2ee5] focus:border-[#5a2ee5]"
           >
             <option value="">-- Select Team --</option>
-            {allTeams.map(team => (
-              <option key={team} value={team}>{team}</option>
+            {allTeams.map((team) => (
+              <option key={team} value={team}>
+                {team}
+              </option>
             ))}
           </select>
         </div>
-        
+
         {isLoadingResults ? (
           <div className="text-center py-4">Loading scores...</div>
         ) : errorResults ? (
           <div className="text-red-500 text-center py-4">{errorResults}</div>
+        ) : scoreboard.length === 0 ? (
+          <div className="text-center py-8 text-primary/60">
+            <p className="text-lg">No brackets submitted yet.</p>
+            <p className="text-sm mt-2">
+              Share the join code with your group to get started!
+            </p>
+          </div>
         ) : (
           <div className="overflow-x-auto pt-24 relative">
             <table className="w-full">
@@ -350,7 +429,8 @@ const ScoreboardPage: React.FC = () => {
                       Finish for {selectedTeam}
                       <div className="absolute hidden group-hover:block bg-gray-800 text-white p-3 rounded shadow-lg w-64 text-sm z-20 left-0 top-0 transform -translate-y-full">
                         <div className="absolute h-8 w-full bottom-0 translate-y-full opacity-0"></div>
-                        Where this participant predicted {selectedTeam} would finish in the playoffs
+                        Where this participant predicted {selectedTeam} would
+                        finish in the playoffs
                       </div>
                     </th>
                   )}
@@ -358,15 +438,16 @@ const ScoreboardPage: React.FC = () => {
                     Potential Pts
                     <div className="absolute hidden group-hover:block bg-gray-800 text-white p-3 rounded shadow-lg w-64 text-sm z-20 right-0 top-0 transform -translate-y-full">
                       <div className="absolute h-8 w-full bottom-0 translate-y-full opacity-0"></div>
-                      Maximum possible score based on remaining games and predictions.
+                      Maximum possible score based on remaining games and
+                      predictions.
                     </div>
                   </th>
                   <th className="px-4 py-2 text-right text-[#1a1a1d] relative group cursor-help">
                     Score
                     <div className="absolute hidden group-hover:block hover:block bg-gray-800 text-white p-3 rounded shadow-lg w-64 text-sm z-20 right-0 top-0 transform -translate-y-full">
                       <div className="absolute h-8 w-full bottom-0 translate-y-full opacity-0"></div>
-                      Current score based on correct predictions. 
-                      <button 
+                      Current score based on correct predictions.
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setShowScoringModal(true);
@@ -381,12 +462,11 @@ const ScoreboardPage: React.FC = () => {
               </thead>
               <tbody>
                 {scoreboard.map((entry, index) => {
-                  // Get finals guess for this user
-                  const finalsGuess = (staticGuesses as Record<string, any>)[entry.userId]?.Finals;
+                  const finalsGuess = entry.bracket?.Finals;
                   const finalsGuessText =
                     finalsGuess && finalsGuess.winner && finalsGuess.inGames
                       ? `${finalsGuess.winner} in ${finalsGuess.inGames}`
-                      : "—";
+                      : "\u2014";
                   return (
                     <tr
                       key={entry.userId}
@@ -400,24 +480,35 @@ const ScoreboardPage: React.FC = () => {
                     >
                       <td className="px-4 py-2 text-[#1a1a1d]">
                         {entry.status === "loaded" && entry.score !== null
-                          ? index === 0 ? "🥇 1" : index === 1 ? "🥈 2" : index === 2 ? "🥉 3" : index + 1
+                          ? index === 0
+                            ? "\ud83e\udd47 1"
+                            : index === 1
+                            ? "\ud83e\udd48 2"
+                            : index === 2
+                            ? "\ud83e\udd49 3"
+                            : index + 1
                           : "-"}
                       </td>
-                      <td className="px-4 py-2 text-[#1a1a1d] text-base font-bold">{entry.name}</td>
-                      <td className="px-4 py-2 text-[#1a1a1d]">{finalsGuessText}</td>
+                      <td className="px-4 py-2 text-[#1a1a1d] text-base font-bold">
+                        {entry.name}
+                      </td>
+                      <td className="px-4 py-2 text-[#1a1a1d]">
+                        {finalsGuessText}
+                      </td>
                       {selectedTeam && (
                         <td className="px-4 py-2 text-[#1a1a1d]">
-                          {findTeamExitPrediction(entry.userId, selectedTeam)}
+                          {findTeamExitPrediction(entry, selectedTeam)}
                         </td>
                       )}
                       <td className="px-4 py-2 text-right text-[#1a1a1d] font-medium">
-                        {entry.status === "loaded" && entry.potentialPoints !== null 
+                        {entry.status === "loaded" &&
+                        entry.potentialPoints !== null
                           ? entry.potentialPoints
-                          : entry.status === "pending" 
-                            ? "--" 
-                            : entry.status === "loading" 
-                              ? "Loading..." 
-                              : "Error"}
+                          : entry.status === "pending"
+                          ? "--"
+                          : entry.status === "loading"
+                          ? "Loading..."
+                          : "Error"}
                       </td>
                       <td className="px-4 py-2 text-right font-semibold">
                         {entry.status === "pending" && (
@@ -429,7 +520,9 @@ const ScoreboardPage: React.FC = () => {
                           </span>
                         )}
                         {entry.status === "loaded" && (
-                          <span className="text-[#5a2ee5] text-lg font-bold">{entry.score}</span>
+                          <span className="text-[#5a2ee5] text-lg font-bold">
+                            {entry.score}
+                          </span>
                         )}
                         {entry.status === "error" && (
                           <span

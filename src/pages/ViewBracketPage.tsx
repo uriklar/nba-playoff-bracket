@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import BracketDisplay from "../components/BracketDisplay";
 import { Game, Guesses, Team } from "../types";
 import { getSubmissions, Submission } from "../utils/db";
@@ -24,6 +25,7 @@ const findTeamByName = (
 };
 
 const ViewBracketPage: React.FC = () => {
+  const { groupId } = useParams<{ groupId: string }>();
   const [players, setPlayers] = useState<Player[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>("");
@@ -32,12 +34,14 @@ const ViewBracketPage: React.FC = () => {
   const [isLoadingPlayers, setIsLoadingPlayers] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all submissions on mount
+  // Fetch all submissions for this group on mount
   useEffect(() => {
+    if (!groupId) return;
+
     setIsLoadingPlayers(true);
     setError(null);
 
-    getSubmissions()
+    getSubmissions(groupId)
       .then((subs) => {
         setSubmissions(subs);
         setPlayers(subs.map((s) => ({ id: s.id, name: s.name })));
@@ -50,7 +54,7 @@ const ViewBracketPage: React.FC = () => {
       .finally(() => {
         setIsLoadingPlayers(false);
       });
-  }, []);
+  }, [groupId]);
 
   // When player is selected, convert their bracket to Guesses
   useEffect(() => {
@@ -73,7 +77,9 @@ const ViewBracketPage: React.FC = () => {
     };
 
     if (!rawBracket || typeof rawBracket !== "object") {
-      setError("Bracket data not found or is in an invalid format for this player.");
+      setError(
+        "Bracket data not found or is in an invalid format for this player."
+      );
       setPlayerGuesses(null);
       return;
     }
