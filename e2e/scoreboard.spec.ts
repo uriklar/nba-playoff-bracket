@@ -20,7 +20,8 @@ test.describe("Scoreboard Page", () => {
 
     await page.goto(`/g/${GROUP_ID}`);
 
-    await expect(page.getByText("Engineering Team")).toBeVisible();
+    // Group name appears in both nav and scoreboard heading — use heading role to avoid strict mode violation
+    await expect(page.getByRole("heading", { name: "Engineering Team" })).toBeVisible();
     await expect(page.getByText("ABC123")).toBeVisible();
   });
 
