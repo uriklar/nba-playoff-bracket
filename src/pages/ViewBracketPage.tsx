@@ -24,6 +24,8 @@ const findTeamByName = (
   return null;
 };
 
+const BRACKETS_VISIBLE_DATE = new Date("2026-04-20T00:00:00");
+
 const ViewBracketPage: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const [players, setPlayers] = useState<Player[]>([]);
@@ -33,6 +35,7 @@ const ViewBracketPage: React.FC = () => {
   const [playerGuesses, setPlayerGuesses] = useState<Guesses | null>(null);
   const [isLoadingPlayers, setIsLoadingPlayers] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const isLocked = new Date() < BRACKETS_VISIBLE_DATE;
 
   // Fetch all submissions for this group on mount
   useEffect(() => {
@@ -106,6 +109,23 @@ const ViewBracketPage: React.FC = () => {
   const handleGuessChange = () => {
     // Do nothing in read-only mode
   };
+
+  if (isLocked) {
+    return (
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">View Player Bracket</h1>
+        <div className="my-4 p-6 bg-gray-100 border border-gray-300 rounded-lg text-center">
+          <p className="text-lg font-semibold text-gray-700">
+            Brackets are hidden until April 20th
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            To keep things fair, you can view other players' brackets once
+            everyone has had a chance to submit.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (baseGames.length === 0) {
     return (
