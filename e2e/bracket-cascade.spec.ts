@@ -148,8 +148,10 @@ test.describe("Bracket Cascade Logic", () => {
     await page.locator(`input[name="winner-ECF"][value="${EAST_TEAMS.celtics.name}"]`).click();
     await page.locator("#games-ECF").selectOption("6");
 
-    // Finals should NOT be visible yet (West is not decided)
-    await expect(page.getByText("NBA Finals")).not.toBeVisible();
+    // Finals column should NOT be visible yet in the bracket (West is not decided)
+    // Scope to the bracket section to avoid matching "NBA Finals" in the ScoringInfo table
+    const bracketSection = page.locator("section").filter({ hasText: "Tournament Bracket" });
+    await expect(bracketSection.getByRole("heading", { name: "NBA Finals" })).not.toBeVisible();
 
     // Fill entire West bracket through WCF
     const westR1 = [
@@ -171,7 +173,7 @@ test.describe("Bracket Cascade Logic", () => {
     await page.locator(`input[name="winner-WCF"][value="${WEST_TEAMS.thunder.name}"]`).click();
     await page.locator("#games-WCF").selectOption("6");
 
-    // Now Finals should be visible
-    await expect(page.getByText("NBA Finals")).toBeVisible();
+    // Now Finals should be visible in the bracket
+    await expect(bracketSection.getByRole("heading", { name: "NBA Finals" })).toBeVisible();
   });
 });

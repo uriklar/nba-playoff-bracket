@@ -48,6 +48,8 @@ export function createMockGroup(overrides: Record<string, unknown> = {}) {
     name: "Test Group",
     join_code: "ABC123",
     created_at: "2026-04-01T00:00:00Z",
+    payment_instructions: null,
+    admin_secret: "mock-admin-secret-for-tests",
     ...overrides,
   };
 }

@@ -15,7 +15,12 @@ test.describe("Create Group", () => {
     await page.locator("#groupName").fill("Engineering");
     await page.getByRole("button", { name: "Create Group" }).click();
 
-    // Should redirect to the submit page for the new group
+    // Should show the creation interstitial with join code
+    await expect(page.getByText(mockGroup.join_code as string)).toBeVisible();
+
+    // Click through to the submit page
+    await page.getByRole("button", { name: "Continue to Fill Your Bracket" }).click();
+
     await page.waitForURL(`**/g/${mockGroup.id}/submit`);
     await expect(page).toHaveURL(`/g/${mockGroup.id}/submit`);
   });

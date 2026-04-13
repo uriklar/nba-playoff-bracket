@@ -109,6 +109,22 @@ export async function mockSupabase(page: Page, options: MockSupabaseOptions = {}
       });
     }
 
+    // --- group_payments table ---
+    if (url.includes("/rest/v1/group_payments")) {
+      if (method === "GET") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify([]),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({}),
+      });
+    }
+
     // --- official_results table ---
     if (url.includes("/rest/v1/official_results")) {
       const results = options.officialResults ?? [
@@ -118,6 +134,15 @@ export async function mockSupabase(page: Page, options: MockSupabaseOptions = {}
         status: 200,
         contentType: "application/json",
         body: JSON.stringify(results),
+      });
+    }
+
+    // --- RPC calls ---
+    if (url.includes("/rest/v1/rpc/")) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(true),
       });
     }
 

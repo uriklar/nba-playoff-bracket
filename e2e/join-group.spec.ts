@@ -17,9 +17,9 @@ test.describe("Join Group", () => {
     await page.locator("#joinCode").fill("XYZ789");
     await page.getByRole("button", { name: "Join Group" }).click();
 
-    // Should redirect to the scoreboard
-    await page.waitForURL(`**/g/${mockGroup.id}`);
-    await expect(page).toHaveURL(`/g/${mockGroup.id}`);
+    // Should redirect to the submit page
+    await page.waitForURL(`**/g/${mockGroup.id}/submit`);
+    await expect(page).toHaveURL(`/g/${mockGroup.id}/submit`);
   });
 
   test("shows error for invalid join code", async ({ page }) => {
