@@ -1,6 +1,7 @@
 import { useState } from "react";
 import bracketData from "../data/playoffBracketTemplate.json";
 import { upsertSubmission } from "../utils/db";
+import { setParticipantName } from "../utils/localStorage";
 
 // Types
 export interface Team {
@@ -186,6 +187,7 @@ export const useBracketSubmission = (
         submissionPayload.guess
       );
       if (result !== null) {
+        setParticipantName(groupId, userName.trim());
         setSubmitStatus("success");
       } else {
         setSubmitStatus("error");

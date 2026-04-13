@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import BracketDisplay from "./BracketDisplay";
 import ScoringInfo from "./ScoringInfo";
-import { getGroupById, type Group } from "../utils/db";
+import { getGroupById, getGroupPayments, togglePaymentStatus, updatePaymentInstructions, type Group, type GroupPayment } from "../utils/db";
+import { getAdminSecret } from "../utils/localStorage";
+import { useGroupContext } from "../App";
 import bracketData from "../data/playoffBracketTemplate.json";
 import {
   loadScoreboard,
@@ -19,7 +21,8 @@ interface Guesses {
 
 const ScoreboardPage: React.FC = () => {
   const { groupId } = useParams<{ groupId: string }>();
-  const [group, setGroup] = useState<Group | null>(null);
+  const { group: contextGroup, isAdmin } = useGroupContext();
+  const [group, setGroup] = useState<Group | null>(contextGroup);
   const [isLoadingResults, setIsLoadingResults] = useState<boolean>(true);
   const [errorResults, setErrorResults] = useState<string | null>(null);
   const [resultsGames, setResultsGames] = useState<Game[]>([]);
@@ -29,6 +32,12 @@ const ScoreboardPage: React.FC = () => {
   const [showScoringModal, setShowScoringModal] = useState<boolean>(false);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [copiedInvite, setCopiedInvite] = useState(false);
+
+  // Admin state
+  const [payments, setPayments] = useState<Record<string, boolean>>({});
+  const [paymentInstructions, setPaymentInstructions] = useState("");
+  const [isSavingInstructions, setIsSavingInstructions] = useState(false);
+  const [instructionsSaved, setInstructionsSaved] = useState(false);
 
   const handleCopyJoinCode = useCallback(async () => {
     if (!group) return;
@@ -181,6 +190,14 @@ const ScoreboardPage: React.FC = () => {
     return "No pick";
   };
 
+  // Sync group from context when it loads
+  useEffect(() => {
+    if (contextGroup) {
+      setGroup(contextGroup);
+      setPaymentInstructions(contextGroup.payment_instructions ?? "");
+    }
+  }, [contextGroup]);
+
   // Effect: Load data
   useEffect(() => {
     if (!groupId) return;
@@ -190,15 +207,33 @@ const ScoreboardPage: React.FC = () => {
       setErrorResults(null);
 
       try {
-        const [groupData, { scoreboard: sb, results }] = await Promise.all([
+        const promises: [Promise<Group | null>, Promise<{ scoreboard: ScoreboardEntry[]; results: OfficialResults }>, Promise<GroupPayment[]>?] = [
           getGroupById(groupId),
           loadScoreboard(groupId),
-        ]);
+        ];
 
-        setGroup(groupData);
+        if (isAdmin) {
+          promises.push(getGroupPayments(groupId));
+        }
+
+        const [groupData, scoreboardResult, paymentsData] = await Promise.all(promises);
+
+        setGroup(groupData as Group | null);
+        const { scoreboard: sb, results } = scoreboardResult as { scoreboard: ScoreboardEntry[]; results: OfficialResults };
+        if (groupData) {
+          setPaymentInstructions((groupData as Group).payment_instructions ?? "");
+        }
         setOfficialResults(results);
         processResultsForDisplay(results);
         setScoreboard(sb);
+
+        if (paymentsData) {
+          const paymentMap: Record<string, boolean> = {};
+          (paymentsData as GroupPayment[]).forEach((p) => {
+            paymentMap[p.participant_name] = p.paid;
+          });
+          setPayments(paymentMap);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         console.error("Error loading data:", err);
@@ -209,7 +244,40 @@ const ScoreboardPage: React.FC = () => {
     };
 
     loadData();
-  }, [groupId]);
+  }, [groupId, isAdmin]);
+
+  // Admin handlers
+  const handleSaveInstructions = async () => {
+    if (!groupId) return;
+    const secret = getAdminSecret(groupId);
+    if (!secret) return;
+
+    setIsSavingInstructions(true);
+    const success = await updatePaymentInstructions(groupId, paymentInstructions, secret);
+    setIsSavingInstructions(false);
+    if (success) {
+      setInstructionsSaved(true);
+      setTimeout(() => setInstructionsSaved(false), 2000);
+    }
+  };
+
+  const handleTogglePayment = async (participantName: string) => {
+    if (!groupId) return;
+    const secret = getAdminSecret(groupId);
+    if (!secret) return;
+
+    const currentStatus = payments[participantName] ?? false;
+    const newStatus = !currentStatus;
+
+    // Optimistic update
+    setPayments((prev) => ({ ...prev, [participantName]: newStatus }));
+
+    const success = await togglePaymentStatus(groupId, participantName, newStatus, secret);
+    if (!success) {
+      // Revert on failure
+      setPayments((prev) => ({ ...prev, [participantName]: currentStatus }));
+    }
+  };
 
   // Scoring formula modal component
   const ScoringFormulaModal = () => {
@@ -369,6 +437,49 @@ const ScoreboardPage: React.FC = () => {
     <div className="space-y-8">
       <ScoringInfo />
 
+      {/* Admin Settings */}
+      {isAdmin && (
+        <section className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-accent">
+          <h2 className="text-lg font-bold text-primary font-montserrat mb-4">
+            Admin Settings
+          </h2>
+          <div className="space-y-3">
+            <label className="block">
+              <span className="text-sm font-medium text-primary/80 font-inter mb-1.5 block">
+                Payment Instructions
+              </span>
+              <textarea
+                value={paymentInstructions}
+                onChange={(e) => setPaymentInstructions(e.target.value)}
+                placeholder="e.g., Send 50 NIS to 054-1234567 on Bit. Message: NBA bracket"
+                rows={3}
+                className="w-full px-4 py-2.5 rounded-lg border border-secondary/50
+                         focus:ring-2 focus:ring-accent/30 focus:border-accent
+                         placeholder:text-primary/40 font-inter text-primary
+                         transition duration-200 resize-vertical"
+              />
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveInstructions}
+                disabled={isSavingInstructions}
+                className="px-4 py-2 text-sm font-medium rounded-lg text-white
+                         bg-accent hover:bg-accent/90 disabled:opacity-50
+                         transition duration-200 font-inter"
+              >
+                {isSavingInstructions ? "Saving..." : "Save Instructions"}
+              </button>
+              {instructionsSaved && (
+                <span className="text-sm text-green-600 font-inter">Saved!</span>
+              )}
+            </div>
+            <p className="text-xs text-primary/50 font-inter">
+              Leave empty to hide the payment banner. Unpaid participants will see this message on every page.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Scoreboard Section */}
       <section className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -487,6 +598,11 @@ const ScoreboardPage: React.FC = () => {
                       </button>
                     </div>
                   </th>
+                  {isAdmin && (
+                    <th className="px-4 py-2 text-center text-[#1a1a1d]">
+                      Paid
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -562,6 +678,23 @@ const ScoreboardPage: React.FC = () => {
                           </span>
                         )}
                       </td>
+                      {isAdmin && (
+                        <td className="px-4 py-2 text-center">
+                          <button
+                            onClick={() => handleTogglePayment(entry.name)}
+                            className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${
+                              payments[entry.name]
+                                ? "bg-green-500 border-green-500 text-white"
+                                : "border-gray-300 text-transparent hover:border-gray-400"
+                            }`}
+                            title={payments[entry.name] ? "Mark as unpaid" : "Mark as paid"}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

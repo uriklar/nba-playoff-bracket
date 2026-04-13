@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createGroup, getGroupByJoinCode, type Group } from "../utils/db";
+import { createGroup, getGroupByJoinCode, type GroupWithSecret } from "../utils/db";
+import { setAdminSecret } from "../utils/localStorage";
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -9,7 +10,7 @@ const LandingPage: React.FC = () => {
   const [groupName, setGroupName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [createdGroup, setCreatedGroup] = useState<Group | null>(null);
+  const [createdGroup, setCreatedGroup] = useState<GroupWithSecret | null>(null);
   const [copied, setCopied] = useState(false);
 
   // Join group state
@@ -26,6 +27,7 @@ const LandingPage: React.FC = () => {
 
     const group = await createGroup(groupName.trim());
     if (group) {
+      setAdminSecret(group.id, group.admin_secret);
       setCreatedGroup(group);
     } else {
       setCreateError("Failed to create group. Please try again.");
