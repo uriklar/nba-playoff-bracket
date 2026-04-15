@@ -68,7 +68,7 @@ const ScoreboardPage: React.FC = () => {
   }, []);
 
   // Helper to populate the bracket structure and guesses based on official results
-  const processResultsForDisplay = (results: OfficialResults) => {
+  const processResultsForDisplay = useCallback((results: OfficialResults) => {
     const currentGames: Game[] = JSON.parse(JSON.stringify(bracketData.games));
     const derivedGuesses: Guesses = {};
 
@@ -121,7 +121,7 @@ const ScoreboardPage: React.FC = () => {
 
     setResultsGames(currentGames);
     setResultsGuesses(derivedGuesses);
-  };
+  }, []);
 
   // Find where a user predicted a team would exit
   const findTeamExitPrediction = (
@@ -198,53 +198,80 @@ const ScoreboardPage: React.FC = () => {
     }
   }, [contextGroup]);
 
+  const loadData = useCallback(async (showLoading = true) => {
+    if (!groupId) return;
+
+    if (showLoading) {
+      setIsLoadingResults(true);
+    }
+    setErrorResults(null);
+
+    try {
+      const promises: [Promise<Group | null>, Promise<{ scoreboard: ScoreboardEntry[]; results: OfficialResults }>, Promise<GroupPayment[]>?] = [
+        getGroupById(groupId),
+        loadScoreboard(groupId),
+      ];
+
+      if (isAdmin) {
+        promises.push(getGroupPayments(groupId));
+      }
+
+      const [groupData, scoreboardResult, paymentsData] = await Promise.all(promises);
+
+      setGroup(groupData as Group | null);
+      const { scoreboard: sb, results } = scoreboardResult as { scoreboard: ScoreboardEntry[]; results: OfficialResults };
+      if (groupData) {
+        setPaymentInstructions((groupData as Group).payment_instructions ?? "");
+      }
+      setOfficialResults(results);
+      processResultsForDisplay(results);
+      setScoreboard(sb);
+
+      if (paymentsData) {
+        const paymentMap: Record<string, boolean> = {};
+        (paymentsData as GroupPayment[]).forEach((p) => {
+          paymentMap[p.participant_name] = p.paid;
+        });
+        setPayments(paymentMap);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error("Error loading data:", err);
+      setErrorResults(errorMessage);
+    } finally {
+      if (showLoading) {
+        setIsLoadingResults(false);
+      }
+    }
+  }, [groupId, isAdmin, processResultsForDisplay]);
+
   // Effect: Load data
+  useEffect(() => {
+    void loadData(true);
+  }, [loadData]);
+
+  // Refresh scoreboard data while the page is open so cron-synced results
+  // eventually appear without a manual reload.
   useEffect(() => {
     if (!groupId) return;
 
-    const loadData = async () => {
-      setIsLoadingResults(true);
-      setErrorResults(null);
+    let cancelled = false;
 
-      try {
-        const promises: [Promise<Group | null>, Promise<{ scoreboard: ScoreboardEntry[]; results: OfficialResults }>, Promise<GroupPayment[]>?] = [
-          getGroupById(groupId),
-          loadScoreboard(groupId),
-        ];
-
-        if (isAdmin) {
-          promises.push(getGroupPayments(groupId));
-        }
-
-        const [groupData, scoreboardResult, paymentsData] = await Promise.all(promises);
-
-        setGroup(groupData as Group | null);
-        const { scoreboard: sb, results } = scoreboardResult as { scoreboard: ScoreboardEntry[]; results: OfficialResults };
-        if (groupData) {
-          setPaymentInstructions((groupData as Group).payment_instructions ?? "");
-        }
-        setOfficialResults(results);
-        processResultsForDisplay(results);
-        setScoreboard(sb);
-
-        if (paymentsData) {
-          const paymentMap: Record<string, boolean> = {};
-          (paymentsData as GroupPayment[]).forEach((p) => {
-            paymentMap[p.participant_name] = p.paid;
-          });
-          setPayments(paymentMap);
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error("Error loading data:", err);
-        setErrorResults(errorMessage);
-      } finally {
-        setIsLoadingResults(false);
+    const reload = async () => {
+      if (!cancelled) {
+        await loadData(false);
       }
     };
 
-    loadData();
-  }, [groupId, isAdmin]);
+    const intervalId = window.setInterval(() => {
+      void reload();
+    }, 30 * 60_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [groupId, loadData]);
 
   // Admin handlers
   const handleSaveInstructions = async () => {

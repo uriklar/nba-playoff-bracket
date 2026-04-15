@@ -9,6 +9,37 @@ A bracket prediction app to compete by picking NBA playoff series winners and le
 3. Copy `.env.example` to `.env` and fill in your Supabase credentials
 4. `pnpm dev`
 
+## Live Official Results Sync
+
+The app can sync official playoff series results from the `balldontlie` NBA API.
+
+Required server-side env vars:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `BALLDONTLIE_API_KEY`
+
+Optional server-side env vars:
+
+- `RESULTS_SYNC_MIN_INTERVAL_SECONDS`
+- `CRON_SECRET`
+
+The sync endpoint is `POST /api/sync-official-results`.
+It is designed to:
+
+- fetch current playoff games from `balldontlie`
+- detect when a best-of-7 series has been clinched
+- update the latest `official_results` row in Supabase
+- let the scoreboard read synced results from Supabase
+
+If `CRON_SECRET` is set, requests to the sync endpoint must include
+`Authorization: Bearer <CRON_SECRET>`.
+
+By default, the sync route enforces a 6-hour cooldown between syncs unless
+`RESULTS_SYNC_MIN_INTERVAL_SECONDS` overrides it.
+
+Vercel cron is configured to hit that endpoint every 6 hours (4 times per day).
+
 ## Repo Map
 
 ```
