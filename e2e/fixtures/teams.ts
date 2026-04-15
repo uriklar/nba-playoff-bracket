@@ -6,9 +6,9 @@
 export const EAST_TEAMS = {
   pistons: { name: "Detroit Pistons", seed: 1 },
   cavaliers: { name: "Cleveland Cavaliers", seed: 4 },
-  hawks: { name: "Atlanta Hawks", seed: 5 },
+  hawks: { name: "Atlanta Hawks", seed: 6 },
   knicks: { name: "New York Knicks", seed: 3 },
-  raptors: { name: "Toronto Raptors", seed: 6 },
+  raptors: { name: "Toronto Raptors", seed: 5 },
   celtics: { name: "Boston Celtics", seed: 2 },
 } as const;
 

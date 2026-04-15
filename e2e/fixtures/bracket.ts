@@ -83,7 +83,7 @@ export function createMockSubmissions() {
       bracket: {
         ...createCompleteBracket(),
         // Bob picks a couple of known-team upsets
-        E4v5: { winner: EAST_TEAMS.hawks.name, inGames: 7 },
+        E4v5: { winner: EAST_TEAMS.raptors.name, inGames: 7 },
         W3v6: { winner: WEST_TEAMS.timberwolves.name, inGames: 7 },
       },
     }),
