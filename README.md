@@ -38,7 +38,8 @@ If `CRON_SECRET` is set, requests to the sync endpoint must include
 By default, the sync route enforces a 6-hour cooldown between syncs unless
 `RESULTS_SYNC_MIN_INTERVAL_SECONDS` overrides it.
 
-Vercel cron is configured to hit that endpoint every 6 hours (4 times per day).
+For Vercel Hobby deployments, cron is configured to hit that endpoint once per
+day to stay within Hobby cron limits.
 
 ## Repo Map
 

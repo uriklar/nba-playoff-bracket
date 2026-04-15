@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/sync-official-results",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 1 * * *"
     }
   ],
   "rewrites": [
