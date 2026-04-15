@@ -1,28 +1,24 @@
 /**
  * Team data extracted from playoffBracketTemplate.json for use in tests.
- * Only first-round teams (real teams with seeds) are listed here.
+ * Only real first-round teams are listed here; unresolved play-in slots remain TBD in the UI.
  */
 
 export const EAST_TEAMS = {
-  cavaliers: { name: "Cleveland Cavaliers", seed: 1 },
-  heat: { name: "Miami Heat", seed: 8 },
-  pacers: { name: "Indiana Pacers", seed: 4 },
-  bucks: { name: "Milwaukee Bucks", seed: 5 },
+  pistons: { name: "Detroit Pistons", seed: 1 },
+  cavaliers: { name: "Cleveland Cavaliers", seed: 4 },
+  hawks: { name: "Atlanta Hawks", seed: 5 },
   knicks: { name: "New York Knicks", seed: 3 },
-  pistons: { name: "Detroit Pistons", seed: 6 },
+  raptors: { name: "Toronto Raptors", seed: 6 },
   celtics: { name: "Boston Celtics", seed: 2 },
-  magic: { name: "Orlando Magic", seed: 7 },
 } as const;
 
 export const WEST_TEAMS = {
   thunder: { name: "Oklahoma City Thunder", seed: 1 },
-  grizzlies: { name: "Memphis Grizzlies", seed: 8 },
-  nuggets: { name: "Denver Nuggets", seed: 4 },
-  clippers: { name: "Los Angeles Clippers", seed: 5 },
-  lakers: { name: "Los Angeles Lakers", seed: 3 },
+  lakers: { name: "Los Angeles Lakers", seed: 4 },
+  rockets: { name: "Houston Rockets", seed: 5 },
+  nuggets: { name: "Denver Nuggets", seed: 3 },
   timberwolves: { name: "Minnesota Timberwolves", seed: 6 },
-  rockets: { name: "Houston Rockets", seed: 2 },
-  warriors: { name: "Golden State Warriors", seed: 7 },
+  spurs: { name: "San Antonio Spurs", seed: 2 },
 } as const;
 
 /** Game IDs mapped to their round and conference */

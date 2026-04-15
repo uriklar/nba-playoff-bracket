@@ -46,9 +46,9 @@ test.describe("Edge Cases", () => {
 
     await page.getByPlaceholder("Enter your name to submit").fill("Incomplete Test");
 
-    // Pick only one game
-    await page.locator('input[name="winner-E1v8"][value="Cleveland Cavaliers"]').click();
-    await page.locator("#games-E1v8").selectOption("5");
+    // Pick only one fully known game
+    await page.locator('input[name="winner-E4v5"][value="Cleveland Cavaliers"]').click();
+    await page.locator("#games-E4v5").selectOption("5");
 
     // Set up dialog handler to capture the alert
     let dialogMessage = "";

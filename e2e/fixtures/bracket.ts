@@ -1,24 +1,24 @@
 import { EAST_TEAMS, WEST_TEAMS } from "./teams";
 
-/** A complete bracket where all higher seeds win in 6 games */
+/** A complete bracket where the listed higher-seeded known teams win in 6 games */
 export function createCompleteBracket() {
   return {
-    // East Round 1 — higher seeds win
-    E1v8: { winner: EAST_TEAMS.cavaliers.name, inGames: 6 },
-    E4v5: { winner: EAST_TEAMS.pacers.name, inGames: 6 },
+    // East Round 1
+    E1v8: { winner: EAST_TEAMS.pistons.name, inGames: 6 },
+    E4v5: { winner: EAST_TEAMS.cavaliers.name, inGames: 6 },
     E3v6: { winner: EAST_TEAMS.knicks.name, inGames: 6 },
     E2v7: { winner: EAST_TEAMS.celtics.name, inGames: 6 },
-    // West Round 1 — higher seeds win
+    // West Round 1
     W1v8: { winner: WEST_TEAMS.thunder.name, inGames: 6 },
-    W4v5: { winner: WEST_TEAMS.nuggets.name, inGames: 6 },
-    W3v6: { winner: WEST_TEAMS.lakers.name, inGames: 6 },
-    W2v7: { winner: WEST_TEAMS.rockets.name, inGames: 6 },
+    W4v5: { winner: WEST_TEAMS.lakers.name, inGames: 6 },
+    W3v6: { winner: WEST_TEAMS.nuggets.name, inGames: 6 },
+    W2v7: { winner: WEST_TEAMS.spurs.name, inGames: 6 },
     // East Round 2
-    ESF1: { winner: EAST_TEAMS.cavaliers.name, inGames: 5 },
+    ESF1: { winner: EAST_TEAMS.pistons.name, inGames: 5 },
     ESF2: { winner: EAST_TEAMS.celtics.name, inGames: 7 },
     // West Round 2
     WSF1: { winner: WEST_TEAMS.thunder.name, inGames: 5 },
-    WSF2: { winner: WEST_TEAMS.rockets.name, inGames: 7 },
+    WSF2: { winner: WEST_TEAMS.spurs.name, inGames: 7 },
     // Conference Finals
     ECF: { winner: EAST_TEAMS.celtics.name, inGames: 6 },
     WCF: { winner: WEST_TEAMS.thunder.name, inGames: 6 },
@@ -30,9 +30,9 @@ export function createCompleteBracket() {
 /** Official results with a few series completed */
 export function createPartialOfficialResults() {
   return {
-    E1v8: { winner: EAST_TEAMS.cavaliers.name, inGames: 5 },
+    E1v8: { winner: EAST_TEAMS.pistons.name, inGames: 5 },
     W1v8: { winner: WEST_TEAMS.thunder.name, inGames: 4 },
-    E4v5: { winner: EAST_TEAMS.pacers.name, inGames: 7 },
+    E4v5: { winner: EAST_TEAMS.cavaliers.name, inGames: 7 },
   };
 }
 
@@ -82,9 +82,9 @@ export function createMockSubmissions() {
       name: "Bob",
       bracket: {
         ...createCompleteBracket(),
-        // Bob picks some upsets
-        E1v8: { winner: "Miami Heat", inGames: 7 },
-        W1v8: { winner: "Memphis Grizzlies", inGames: 7 },
+        // Bob picks a couple of known-team upsets
+        E4v5: { winner: EAST_TEAMS.hawks.name, inGames: 7 },
+        W3v6: { winner: WEST_TEAMS.timberwolves.name, inGames: 7 },
       },
     }),
     createMockSubmission({
@@ -103,21 +103,21 @@ export function createMockSubmissions() {
 export function getFullBracketPicks(): [string, string, string][] {
   return [
     // East Round 1
-    ["E1v8", EAST_TEAMS.cavaliers.name, "6"],
-    ["E4v5", EAST_TEAMS.pacers.name, "6"],
+    ["E1v8", EAST_TEAMS.pistons.name, "6"],
+    ["E4v5", EAST_TEAMS.cavaliers.name, "6"],
     ["E3v6", EAST_TEAMS.knicks.name, "6"],
     ["E2v7", EAST_TEAMS.celtics.name, "6"],
     // West Round 1
     ["W1v8", WEST_TEAMS.thunder.name, "6"],
-    ["W4v5", WEST_TEAMS.nuggets.name, "6"],
-    ["W3v6", WEST_TEAMS.lakers.name, "6"],
-    ["W2v7", WEST_TEAMS.rockets.name, "6"],
+    ["W4v5", WEST_TEAMS.lakers.name, "6"],
+    ["W3v6", WEST_TEAMS.nuggets.name, "6"],
+    ["W2v7", WEST_TEAMS.spurs.name, "6"],
     // East Round 2
-    ["ESF1", EAST_TEAMS.cavaliers.name, "5"],
+    ["ESF1", EAST_TEAMS.pistons.name, "5"],
     ["ESF2", EAST_TEAMS.celtics.name, "7"],
     // West Round 2
     ["WSF1", WEST_TEAMS.thunder.name, "5"],
-    ["WSF2", WEST_TEAMS.rockets.name, "7"],
+    ["WSF2", WEST_TEAMS.spurs.name, "7"],
     // Conference Finals
     ["ECF", EAST_TEAMS.celtics.name, "6"],
     ["WCF", WEST_TEAMS.thunder.name, "6"],
