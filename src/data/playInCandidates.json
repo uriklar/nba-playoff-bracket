@@ -36,16 +36,11 @@
       "seed": 7,
       "templateGameId": "E2v7",
       "templateTeamKey": "team2",
-      "playInPath": "Winner of East 7/8",
+      "playInPath": "Philadelphia clinched East 7 seed",
       "candidates": [
         {
-          "name": "Orlando Magic",
-          "seed": 7,
-          "logo": "https://cdn.nba.com/logos/nba/1610612753/primary/L/logo.svg"
-        },
-        {
           "name": "Philadelphia 76ers",
-          "seed": 8,
+          "seed": 7,
           "logo": "https://cdn.nba.com/logos/nba/1610612755/primary/L/logo.svg"
         }
       ]
