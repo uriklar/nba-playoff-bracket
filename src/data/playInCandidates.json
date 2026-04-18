@@ -36,22 +36,12 @@
       "seed": 8,
       "templateGameId": "W1v8",
       "templateTeamKey": "team2",
-      "playInPath": "Loser of West 7/8 vs winner of West 9/10",
+      "playInPath": "Phoenix clinched West 8 seed",
       "candidates": [
         {
           "name": "Phoenix Suns",
-          "seed": 7,
+          "seed": 8,
           "logo": "https://cdn.nba.com/logos/nba/1610612756/primary/L/logo.svg"
-        },
-        {
-          "name": "Sacramento Kings",
-          "seed": 9,
-          "logo": "https://cdn.nba.com/logos/nba/1610612758/primary/L/logo.svg"
-        },
-        {
-          "name": "Golden State Warriors",
-          "seed": 10,
-          "logo": "https://cdn.nba.com/logos/nba/1610612744/primary/L/logo.svg"
         }
       ]
     },
