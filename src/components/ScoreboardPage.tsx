@@ -19,7 +19,10 @@ interface Guesses {
   [gameId: string]: Guess;
 }
 
+const BRACKETS_VISIBLE_DATE = new Date("2026-04-20T00:00:00");
+
 const ScoreboardPage: React.FC = () => {
+  const finalsGuessVisible = new Date() >= BRACKETS_VISIBLE_DATE;
   const { groupId } = useParams<{ groupId: string }>();
   const { group: contextGroup, isAdmin } = useGroupContext();
   const [group, setGroup] = useState<Group | null>(contextGroup);
@@ -584,13 +587,15 @@ const ScoreboardPage: React.FC = () => {
                       Participant name
                     </div>
                   </th>
-                  <th className="px-4 py-2 text-left text-[#1a1a1d] relative group cursor-help">
-                    Finals Guess
-                    <div className="absolute hidden group-hover:block bg-gray-800 text-white p-3 rounded shadow-lg w-64 text-sm z-20 left-0 top-0 transform -translate-y-full">
-                      <div className="absolute h-8 w-full bottom-0 translate-y-full opacity-0"></div>
-                      Participant's prediction for the NBA Finals
-                    </div>
-                  </th>
+                  {finalsGuessVisible && (
+                    <th className="px-4 py-2 text-left text-[#1a1a1d] relative group cursor-help">
+                      Finals Guess
+                      <div className="absolute hidden group-hover:block bg-gray-800 text-white p-3 rounded shadow-lg w-64 text-sm z-20 left-0 top-0 transform -translate-y-full">
+                        <div className="absolute h-8 w-full bottom-0 translate-y-full opacity-0"></div>
+                        Participant's prediction for the NBA Finals
+                      </div>
+                    </th>
+                  )}
                   {selectedTeam && (
                     <th className="px-4 py-2 text-left text-[#1a1a1d] relative group cursor-help">
                       Finish for {selectedTeam}
@@ -664,9 +669,11 @@ const ScoreboardPage: React.FC = () => {
                       <td className="px-4 py-2 text-[#1a1a1d] text-base font-bold">
                         {entry.name}
                       </td>
-                      <td className="px-4 py-2 text-[#1a1a1d]">
-                        {finalsGuessText}
-                      </td>
+                      {finalsGuessVisible && (
+                        <td className="px-4 py-2 text-[#1a1a1d]">
+                          {finalsGuessText}
+                        </td>
+                      )}
                       {selectedTeam && (
                         <td className="px-4 py-2 text-[#1a1a1d]">
                           {findTeamExitPrediction(entry, selectedTeam)}
