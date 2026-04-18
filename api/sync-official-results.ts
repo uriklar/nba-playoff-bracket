@@ -52,6 +52,7 @@ async function fetchBalldontlieGames(
   const allGames: BalldontlieGame[] = [];
   let cursor: string | null = null;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const params = new URLSearchParams({
       per_page: "100",

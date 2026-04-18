@@ -41,9 +41,10 @@ const CreateLeagueForm: React.FC = () => {
       console.log("Created league:", data);
       setLeagueName(""); // Clear the form
       // TODO: Optionally redirect or update a list of leagues
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error creating league:", err);
-      setError(err.message || "An unexpected error occurred.");
+      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }

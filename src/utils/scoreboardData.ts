@@ -1,5 +1,6 @@
 import { getOfficialResults, getSubmissions } from "./db";
 import { calculateScore, calculatePotentialPoints } from "./scoring";
+import type { PlayoffData } from "./types";
 
 // Types
 export interface Team {
@@ -77,14 +78,16 @@ export const loadScoreboard = async (
   scoreboard: ScoreboardEntry[];
   results: OfficialResults;
 }> => {
-  const [results, submissions] = await Promise.all([
+  const [rawResults, submissions] = await Promise.all([
     getOfficialResults(),
     getSubmissions(groupId),
   ]);
 
-  if (!results) {
+  if (!rawResults) {
     throw new Error("Could not fetch official results.");
   }
+
+  const results = rawResults as unknown as OfficialResults;
 
   if (!submissions || submissions.length === 0) {
     return { scoreboard: [], results };
@@ -93,8 +96,8 @@ export const loadScoreboard = async (
   const scoreboard: ScoreboardEntry[] = submissions.map((submission) => {
     try {
       const bracket = submission.bracket as RawUserGuess;
-      const score = calculateScore(bracket, results);
-      const potentialPoints = calculatePotentialPoints(bracket, results);
+      const score = calculateScore(bracket, results as unknown as PlayoffData);
+      const potentialPoints = calculatePotentialPoints(bracket, results as unknown as PlayoffData);
       return {
         userId: submission.user_id,
         name: submission.name,

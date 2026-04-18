@@ -19,7 +19,7 @@ export interface Submission {
   user_id: string
   name: string
   group_id: string
-  bracket: any
+  bracket: Record<string, unknown>
   created_at: string
   updated_at: string
 }
@@ -142,7 +142,7 @@ export const getSubmission = async (id: string): Promise<Submission | null> => {
 export const upsertSubmission = async (
   groupId: string,
   name: string,
-  bracket: any
+  bracket: Record<string, unknown>
 ): Promise<Submission | null> => {
   const { data, error } = await supabase
     .from('submissions')
@@ -256,7 +256,7 @@ export const togglePaymentStatus = async (
 /**
  * Fetch the latest official results from the database.
  */
-export const getOfficialResults = async (): Promise<any | null> => {
+export const getOfficialResults = async (): Promise<Record<string, unknown> | null> => {
   const { data, error } = await supabase
     .from('official_results')
     .select('results')

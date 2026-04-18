@@ -15,6 +15,7 @@ export interface GroupContext {
   isAdmin: boolean;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGroupContext() {
   return useOutletContext<GroupContext>();
 }

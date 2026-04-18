@@ -5,14 +5,6 @@ import {
 } from "./predictorBehaviorAnalysis";
 import { getPredictors } from "../utils/stats";
 
-// Helper function to check if array is sorted according to comparator
-function isSorted<T>(arr: T[], comparator: (a: T, b: T) => number): boolean {
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (comparator(arr[i], arr[i + 1]) > 0) return false;
-  }
-  return true;
-}
-
 describe("Predictor Behavior Analysis", () => {
   test("getPredictorSimilarities returns valid analysis", () => {
     const results = getPredictorSimilarities();

@@ -52,7 +52,9 @@ export function getPredictorConsistency(): PredictorConsistency[] {
       });
 
       // Calculate round-specific metrics
-      const roundConsistency: { [round: number]: any } = {};
+      const roundConsistency: {
+        [round: number]: { consensusAlignment: number; gameLengthVariance: number };
+      } = {};
       Object.entries(roundData).forEach(([round, games]) => {
         const avg = games.reduce((a, b) => a + b, 0) / games.length;
         const variance =

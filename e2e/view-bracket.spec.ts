@@ -3,7 +3,6 @@ import { mockSupabase } from "./helpers/mock-supabase";
 import {
   createMockGroup,
   createMockSubmissions,
-  createEmptyOfficialResults,
 } from "./fixtures/bracket";
 
 test.describe("View Bracket Page", () => {

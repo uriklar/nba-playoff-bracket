@@ -168,6 +168,7 @@ const ScoreboardPage: React.FC = () => {
     let currentGameId = startingGameId;
     let currentRound = 1;
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const currentGame = bracketData.games.find(
         (game) => game.gameId === currentGameId

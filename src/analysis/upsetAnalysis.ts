@@ -34,7 +34,14 @@ export function getUpsetAnalysisBySeedDifference(): UpsetAnalysis[] {
   const totalPredictors = predictors.length;
 
   // Group series by seed difference
-  const seedDiffData: { [diff: number]: any[] } = {};
+  type SeriesEntry = {
+    seriesId: string;
+    higherSeed: string;
+    lowerSeed: string;
+    upsetCount: number;
+    averageGames: number;
+  };
+  const seedDiffData: { [diff: number]: SeriesEntry[] } = {};
 
   seriesIds.forEach((seriesId) => {
     const seedDiff = getSeedDifference(seriesId);
@@ -98,7 +105,12 @@ export function getUnderdogPredictors(): UnderdogPrediction[] {
   return predictors
     .map((predictor) => {
       const predictions = guesses[predictor];
-      const upsets: any[] = [];
+      const upsets: {
+        seriesId: string;
+        winner: string;
+        seedDifference: number;
+        inGames: number;
+      }[] = [];
       let totalGamesInUpsets = 0;
 
       seriesIds.forEach((seriesId) => {

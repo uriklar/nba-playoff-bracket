@@ -87,7 +87,7 @@ describe("calculateScore", () => {
   // Test edge cases
   test("handles missing data gracefully", () => {
     expect(calculateScore({}, {})).toBe(0);
-    expect(calculateScore(null as any, null as any)).toBe(0);
+    expect(calculateScore(null as unknown as PlayoffData, null as unknown as PlayoffData)).toBe(0);
   });
 
   test("ignores TBD results", () => {

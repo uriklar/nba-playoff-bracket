@@ -15,7 +15,6 @@ export type GameLengthResult = {
 export function getGameLengthAnalysis(): GameLengthResult[] {
   const predictors = getPredictors();
   const seriesIds = getSeriesIds();
-  const totalPredictors = predictors.length;
 
   // Group series by round
   const roundGroups: { [round: number]: string[] } = {};

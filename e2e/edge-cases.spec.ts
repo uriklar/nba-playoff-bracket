@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import { mockSupabase } from "./helpers/mock-supabase";
-import { createMockGroup } from "./fixtures/bracket";
 
 test.describe("Edge Cases", () => {
   const GROUP_ID = "test-group-id-123";
@@ -72,9 +71,7 @@ test.describe("Edge Cases", () => {
     // The form has required on the input, so it won't submit
     // But if somehow triggered, the handler checks for empty name
 
-    let dialogMessage = "";
     page.on("dialog", async (dialog) => {
-      dialogMessage = dialog.message();
       await dialog.accept();
     });
 
