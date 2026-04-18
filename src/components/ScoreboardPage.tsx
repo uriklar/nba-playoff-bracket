@@ -536,27 +536,29 @@ const ScoreboardPage: React.FC = () => {
         </div>
 
         {/* Team Selector */}
-        <div className="mb-6">
-          <label
-            htmlFor="team-selector"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Select a team to see predictions:
-          </label>
-          <select
-            id="team-selector"
-            value={selectedTeam || ""}
-            onChange={(e) => setSelectedTeam(e.target.value || null)}
-            className="block w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#5a2ee5] focus:border-[#5a2ee5]"
-          >
-            <option value="">-- Select Team --</option>
-            {allTeams.map((team) => (
-              <option key={team} value={team}>
-                {team}
-              </option>
-            ))}
-          </select>
-        </div>
+        {finalsGuessVisible && (
+          <div className="mb-6">
+            <label
+              htmlFor="team-selector"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Select a team to see predictions:
+            </label>
+            <select
+              id="team-selector"
+              value={selectedTeam || ""}
+              onChange={(e) => setSelectedTeam(e.target.value || null)}
+              className="block w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#5a2ee5] focus:border-[#5a2ee5]"
+            >
+              <option value="">-- Select Team --</option>
+              {allTeams.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {isLoadingResults ? (
           <div className="text-center py-4">Loading scores...</div>
