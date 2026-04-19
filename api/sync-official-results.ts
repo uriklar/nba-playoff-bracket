@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import bracketTemplate from "../src/data/playoffBracketTemplate.json";
+import bracketTemplate from "../src/data/playoffBracketTemplate.json" with { type: "json" };
 import {
   buildOfficialResultsFromGames,
   getCurrentPlayoffWindow,

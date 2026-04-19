@@ -1,4 +1,4 @@
-import bracketTemplate from "../data/playoffBracketTemplate.json";
+import bracketTemplate from "../data/playoffBracketTemplate.json" with { type: "json" };
 
 export interface SyncTeam {
   name: string;
