@@ -19,14 +19,23 @@ const env: EnvMap =
 
 const BALLDONTLIE_GAMES_URL = "https://api.balldontlie.io/v1/games";
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-    },
-  });
+interface NodeReq {
+  method?: string;
+  url?: string;
+  headers: Record<string, string | string[] | undefined>;
+}
+
+interface NodeRes {
+  statusCode: number;
+  setHeader(name: string, value: string): void;
+  end(chunk?: string): void;
+}
+
+function sendJson(res: NodeRes, body: unknown, status = 200): void {
+  res.statusCode = status;
+  res.setHeader("content-type", "application/json; charset=utf-8");
+  res.setHeader("cache-control", "no-store");
+  res.end(JSON.stringify(body));
 }
 
 function getCooldownSeconds(): number {
@@ -34,14 +43,19 @@ function getCooldownSeconds(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 21600;
 }
 
-function isAuthorizedRequest(request: Request): boolean {
+function getHeader(req: NodeReq, name: string): string | undefined {
+  const raw = req.headers[name.toLowerCase()];
+  return Array.isArray(raw) ? raw[0] : raw;
+}
+
+function isAuthorizedRequest(req: NodeReq): boolean {
   const cronSecret = env.CRON_SECRET;
 
   if (!cronSecret) {
     return true;
   }
 
-  return request.headers.get("authorization") === `Bearer ${cronSecret}`;
+  return getHeader(req, "authorization") === `Bearer ${cronSecret}`;
 }
 
 async function fetchBalldontlieGames(
@@ -95,31 +109,30 @@ async function fetchBalldontlieGames(
   return allGames;
 }
 
-export default async function handler(request: Request): Promise<Response> {
+export default async function handler(
+  req: NodeReq,
+  res: NodeRes
+): Promise<void> {
   const t0 = Date.now();
   const mark = (label: string) =>
     console.log(`[sync] +${Date.now() - t0}ms ${label}`);
   mark("start");
 
-  if (!["GET", "POST"].includes(request.method)) {
-    return jsonResponse({ error: "Method not allowed" }, 405);
+  if (!["GET", "POST"].includes(req.method ?? "")) {
+    return sendJson(res, { error: "Method not allowed" }, 405);
   }
 
-  if (!isAuthorizedRequest(request)) {
-    return jsonResponse({ error: "Unauthorized" }, 401);
+  if (!isAuthorizedRequest(req)) {
+    return sendJson(res, { error: "Unauthorized" }, 401);
   }
 
   const supabaseUrl = env.SUPABASE_URL ?? env.VITE_SUPABASE_URL;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
   const balldontlieApiKey = env.BALLDONTLIE_API_KEY;
-  mark(
-    `env ok=${Boolean(supabaseUrl && serviceRoleKey && balldontlieApiKey)} urlHost=${
-      supabaseUrl ? new URL(supabaseUrl).host : "none"
-    }`
-  );
 
   if (!supabaseUrl || !serviceRoleKey || !balldontlieApiKey) {
-    return jsonResponse(
+    return sendJson(
+      res,
       {
         error:
           "Missing required env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BALLDONTLIE_API_KEY",
@@ -131,17 +144,17 @@ export default async function handler(request: Request): Promise<Response> {
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  mark("supabase client created");
 
   const { data: rows, error: latestError } = await admin
     .from("official_results")
     .select("id, results, updated_at")
     .order("updated_at", { ascending: false })
     .limit(1);
-  mark(`supabase select done err=${latestError?.message ?? "none"} rows=${rows?.length ?? 0}`);
+  mark(`supabase select err=${latestError?.message ?? "none"} rows=${rows?.length ?? 0}`);
 
   if (latestError) {
-    return jsonResponse(
+    return sendJson(
+      res,
       { error: `Failed to load current official results: ${latestError.message}` },
       500
     );
@@ -150,12 +163,12 @@ export default async function handler(request: Request): Promise<Response> {
   const latestRow = rows?.[0] ?? null;
   const cooldownSeconds = getCooldownSeconds();
   const force =
-    new URL(request.url, "http://localhost").searchParams.get("force") === "1";
+    new URL(req.url ?? "/", "http://localhost").searchParams.get("force") === "1";
 
   if (latestRow && !force) {
     const elapsedMs = Date.now() - Date.parse(latestRow.updated_at);
     if (elapsedMs >= 0 && elapsedMs < cooldownSeconds * 1000) {
-      return jsonResponse({
+      return sendJson(res, {
         status: "skipped",
         updatedAt: latestRow.updated_at,
         cooldownSeconds,
@@ -166,18 +179,16 @@ export default async function handler(request: Request): Promise<Response> {
 
   try {
     const { playoffYear, startDate, endDate } = getCurrentPlayoffWindow();
-    mark(`window playoffYear=${playoffYear} ${startDate}..${endDate}`);
     const games = await fetchBalldontlieGames(
       balldontlieApiKey,
       startDate,
       endDate
     );
-    mark(`balldontlie fetched games=${games.length}`);
+    mark(`balldontlie games=${games.length}`);
     const nextResults = buildOfficialResultsFromGames(
       games,
       bracketTemplate.games
     );
-    mark(`results built series=${Object.keys(nextResults).length}`);
     const updatedAt = new Date().toISOString();
 
     if (latestRow) {
@@ -188,24 +199,17 @@ export default async function handler(request: Request): Promise<Response> {
           updated_at: updatedAt,
         })
         .eq("id", latestRow.id);
-      mark(`supabase update err=${updateError?.message ?? "none"}`);
-
-      if (updateError) {
-        throw updateError;
-      }
+      if (updateError) throw updateError;
     } else {
       const { error: insertError } = await admin.from("official_results").insert({
         results: nextResults,
         updated_at: updatedAt,
       });
-      mark(`supabase insert err=${insertError?.message ?? "none"}`);
-
-      if (insertError) {
-        throw insertError;
-      }
+      if (insertError) throw insertError;
     }
+    mark(`done series=${Object.keys(nextResults).length}`);
 
-    return jsonResponse({
+    return sendJson(res, {
       status: "synced",
       updatedAt,
       playoffYear,
@@ -214,8 +218,7 @@ export default async function handler(request: Request): Promise<Response> {
       results: nextResults,
     });
   } catch (error) {
-    mark(`ERROR ${error instanceof Error ? error.message : String(error)}`);
     const message = error instanceof Error ? error.message : String(error);
-    return jsonResponse({ error: message }, 500);
+    return sendJson(res, { error: message }, 500);
   }
 }
