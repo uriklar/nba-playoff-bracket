@@ -30,7 +30,7 @@ const ScoreboardPage: React.FC = () => {
   const [errorResults, setErrorResults] = useState<string | null>(null);
   const [resultsGames, setResultsGames] = useState<Game[]>([]);
   const [resultsGuesses, setResultsGuesses] = useState<Guesses>({});
-  const [, setOfficialResults] = useState<OfficialResults | null>(null);
+  const [officialResults, setOfficialResults] = useState<OfficialResults | null>(null);
   const [scoreboard, setScoreboard] = useState<ScoreboardEntry[]>([]);
   const [showScoringModal, setShowScoringModal] = useState<boolean>(false);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
@@ -751,15 +751,28 @@ const ScoreboardPage: React.FC = () => {
         ) : errorResults ? (
           <div className="text-red-500 text-center py-4">{errorResults}</div>
         ) : (
-          <div className="bg-[#f8f5fd] rounded-lg p-4">
-            <BracketDisplay
-              games={resultsGames}
-              guesses={resultsGuesses}
-              readOnly={true}
-              onGuessChange={() => {}}
-              layoutMode="conferences"
-            />
-          </div>
+          <>
+            {officialResults &&
+              Object.values(officialResults).some(
+                (r) => r && r.winner && r.inGames == null
+              ) && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  <span className="font-semibold">Heads up:</span> some series
+                  are still in progress. Provisional winners reflect the
+                  current series lead and may change until a team wins 4 games.
+                  Series length locks in only once the series ends.
+                </div>
+              )}
+            <div className="bg-[#f8f5fd] rounded-lg p-4">
+              <BracketDisplay
+                games={resultsGames}
+                guesses={resultsGuesses}
+                readOnly={true}
+                onGuessChange={() => {}}
+                layoutMode="conferences"
+              />
+            </div>
+          </>
         )}
       </section>
 

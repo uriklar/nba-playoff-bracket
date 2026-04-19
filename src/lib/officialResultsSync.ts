@@ -26,7 +26,7 @@ export interface BalldontlieGame {
 
 export interface SeriesResult {
   winner: string;
-  inGames: number;
+  inGames: number | null;
 }
 
 export interface SeriesSummary {
@@ -162,15 +162,16 @@ export function buildOfficialResultsFromGames(
     const team1Wins = summary.wins[normalizeTeamName(team1)] ?? 0;
     const team2Wins = summary.wins[normalizeTeamName(team2)] ?? 0;
 
-    if (team1Wins < 4 && team2Wins < 4) {
+    if (team1Wins === team2Wins) {
       continue;
     }
 
     const winner = team1Wins > team2Wins ? team1 : team2;
+    const isClinched = team1Wins >= 4 || team2Wins >= 4;
     winnersByGameId[game.gameId] = winner;
     officialResults[game.gameId] = {
       winner,
-      inGames: summary.totalGames,
+      inGames: isClinched ? summary.totalGames : null,
     };
   }
 

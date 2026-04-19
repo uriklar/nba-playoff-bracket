@@ -115,17 +115,42 @@ describe("officialResultsSync", () => {
     });
   });
 
-  test("skips unresolved series and games with TBD participants", () => {
+  test("records a provisional winner without inGames while a series is in progress", () => {
+    const officialResults = buildOfficialResultsFromGames(
+      [finalGame("Cleveland Cavaliers", "Toronto Raptors", 101, 99)],
+      sampleBracket
+    );
+
+    expect(officialResults).toEqual({
+      E4v5: { winner: "Cleveland Cavaliers", inGames: null },
+    });
+  });
+
+  test("skips tied series and series with TBD participants", () => {
     const officialResults = buildOfficialResultsFromGames(
       [
         finalGame("Cleveland Cavaliers", "Toronto Raptors", 101, 99),
         finalGame("Toronto Raptors", "Cleveland Cavaliers", 110, 97),
-        finalGame("Cleveland Cavaliers", "Toronto Raptors", 105, 95),
       ],
       sampleBracket
     );
 
     expect(officialResults).toEqual({});
+  });
+
+  test("propagates provisional winners to downstream rounds even when no downstream games have been played", () => {
+    const officialResults = buildOfficialResultsFromGames(
+      [
+        finalGame("Cleveland Cavaliers", "Toronto Raptors", 101, 99),
+        finalGame("Detroit Pistons", "Boston Celtics", 110, 97),
+      ],
+      sampleBracket
+    );
+
+    expect(officialResults).toEqual({
+      E4v5: { winner: "Cleveland Cavaliers", inGames: null },
+      E1v8: { winner: "Detroit Pistons", inGames: null },
+    });
   });
 
   test("derives playoff window from the current date", () => {

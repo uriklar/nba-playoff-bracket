@@ -26,7 +26,7 @@ export interface Guess {
 
 export interface ResultItem {
   winner: string;
-  inGames: number;
+  inGames: number | null;
 }
 
 export interface OfficialResults {

@@ -97,9 +97,13 @@ const GameCard: React.FC<{
 
   const hasGuessedWinner = guess && guess.winner;
   const showGamesInfo = hasGuessedWinner;
+  const isProvisional = readOnly && !!guess?.winner && guess?.inGames == null;
 
-  // Determine the text to display for games predicted
-  const gamesText = guess?.inGames ? `in ${guess.inGames} games` : "Not set";
+  const gamesText = guess?.inGames
+    ? `in ${guess.inGames} games`
+    : isProvisional
+    ? "Series in progress — locks in when clinched"
+    : "Not set";
 
   return (
     <div
@@ -119,8 +123,19 @@ const GameCard: React.FC<{
           {game.conference} - Match {game.matchup}
         </span>
         {hasGuessedWinner && (
-          <span className="text-xs font-medium text-accent bg-accent/5 px-2 py-1 rounded-full">
-            Winner Selected
+          <span
+            className={`text-xs font-medium px-2 py-1 rounded-full ${
+              isProvisional
+                ? "text-amber-700 bg-amber-100"
+                : "text-accent bg-accent/5"
+            }`}
+            title={
+              isProvisional
+                ? "This series isn't over yet — the winner may change until one team wins 4 games."
+                : undefined
+            }
+          >
+            {isProvisional ? "Series in progress" : "Winner Selected"}
           </span>
         )}
       </div>
