@@ -9,6 +9,12 @@ test.describe("View Bracket Page", () => {
   const GROUP_ID = "test-group-id-123";
   const mockGroup = createMockGroup({ id: GROUP_ID });
 
+  test.beforeEach(async ({ page }) => {
+    // Page renders a locked state until 2026-04-20. Freeze the clock past
+    // that date so the player selector is present.
+    await page.clock.install({ time: new Date("2026-04-21T00:00:00Z") });
+  });
+
   test("renders the page with player selector", async ({ page }) => {
     await mockSupabase(page, {
       groupById: mockGroup,

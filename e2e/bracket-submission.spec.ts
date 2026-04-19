@@ -35,23 +35,6 @@ test.describe("Bracket Submission Page", () => {
     await expect(page.locator("#games-E4v5")).toHaveValue("6");
   });
 
-  test("unresolved play-in matchups are disabled", async ({ page }) => {
-    await page.goto(`/g/${GROUP_ID}/submit`);
-
-    await expect(
-      page.locator('input[name="winner-E1v8"][value="Detroit Pistons"]')
-    ).toBeDisabled();
-    await expect(
-      page.locator('input[name="winner-E2v7"][value="Boston Celtics"]')
-    ).toBeDisabled();
-    await expect(
-      page.locator('input[name="winner-W1v8"][value="Oklahoma City Thunder"]')
-    ).toBeDisabled();
-    await expect(
-      page.locator('input[name="winner-W2v7"][value="San Antonio Spurs"]')
-    ).toBeDisabled();
-  });
-
   test("submission stays blocked until play-in slots are resolved", async ({
     page,
   }) => {

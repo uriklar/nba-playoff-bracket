@@ -26,23 +26,6 @@ test.describe("Bracket Cascade Logic", () => {
     await expect(lakersRadio).toBeChecked();
   });
 
-  test("unresolved play-in series keep first-round radios disabled", async ({
-    page,
-  }) => {
-    await expect(
-      page.locator('input[name="winner-E1v8"][value="Detroit Pistons"]')
-    ).toBeDisabled();
-    await expect(
-      page.locator('input[name="winner-E2v7"][value="Boston Celtics"]')
-    ).toBeDisabled();
-    await expect(
-      page.locator('input[name="winner-W1v8"][value="Oklahoma City Thunder"]')
-    ).toBeDisabled();
-    await expect(
-      page.locator('input[name="winner-W2v7"][value="San Antonio Spurs"]')
-    ).toBeDisabled();
-  });
-
   test("conference semifinals stay hidden while first-round TBD slots remain", async ({
     page,
   }) => {

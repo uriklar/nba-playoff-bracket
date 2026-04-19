@@ -69,6 +69,9 @@ test.describe("Scoreboard Page", () => {
   });
 
   test("team selector dropdown works", async ({ page }) => {
+    // Team selector only renders past BRACKETS_VISIBLE_DATE (2026-04-20).
+    await page.clock.install({ time: new Date("2026-04-21T00:00:00Z") });
+
     await mockSupabase(page, {
       groupById: mockGroup,
       submissions: createMockSubmissions(),
