@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/sync-official-results.ts": {
+      "maxDuration": 30
+    }
+  },
   "crons": [
     {
       "path": "/api/sync-official-results",
