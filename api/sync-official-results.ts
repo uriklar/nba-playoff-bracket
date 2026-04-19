@@ -4,7 +4,7 @@ import {
   buildOfficialResultsFromGames,
   getCurrentPlayoffWindow,
   type BalldontlieGame,
-} from "../src/lib/officialResultsSync";
+} from "../src/lib/officialResultsSync.js";
 
 type EnvMap = Record<string, string | undefined>;
 
