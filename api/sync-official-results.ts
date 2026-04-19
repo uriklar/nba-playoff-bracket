@@ -137,7 +137,8 @@ export default async function handler(request: Request): Promise<Response> {
 
   const latestRow = rows?.[0] ?? null;
   const cooldownSeconds = getCooldownSeconds();
-  const force = new URL(request.url).searchParams.get("force") === "1";
+  const force =
+    new URL(request.url, "http://localhost").searchParams.get("force") === "1";
 
   if (latestRow && !force) {
     const elapsedMs = Date.now() - Date.parse(latestRow.updated_at);
