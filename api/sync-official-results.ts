@@ -96,6 +96,11 @@ async function fetchBalldontlieGames(
 }
 
 export default async function handler(request: Request): Promise<Response> {
+  const t0 = Date.now();
+  const mark = (label: string) =>
+    console.log(`[sync] +${Date.now() - t0}ms ${label}`);
+  mark("start");
+
   if (!["GET", "POST"].includes(request.method)) {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
@@ -107,6 +112,11 @@ export default async function handler(request: Request): Promise<Response> {
   const supabaseUrl = env.SUPABASE_URL ?? env.VITE_SUPABASE_URL;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
   const balldontlieApiKey = env.BALLDONTLIE_API_KEY;
+  mark(
+    `env ok=${Boolean(supabaseUrl && serviceRoleKey && balldontlieApiKey)} urlHost=${
+      supabaseUrl ? new URL(supabaseUrl).host : "none"
+    }`
+  );
 
   if (!supabaseUrl || !serviceRoleKey || !balldontlieApiKey) {
     return jsonResponse(
@@ -121,12 +131,14 @@ export default async function handler(request: Request): Promise<Response> {
   const admin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  mark("supabase client created");
 
   const { data: rows, error: latestError } = await admin
     .from("official_results")
     .select("id, results, updated_at")
     .order("updated_at", { ascending: false })
     .limit(1);
+  mark(`supabase select done err=${latestError?.message ?? "none"} rows=${rows?.length ?? 0}`);
 
   if (latestError) {
     return jsonResponse(
@@ -154,15 +166,18 @@ export default async function handler(request: Request): Promise<Response> {
 
   try {
     const { playoffYear, startDate, endDate } = getCurrentPlayoffWindow();
+    mark(`window playoffYear=${playoffYear} ${startDate}..${endDate}`);
     const games = await fetchBalldontlieGames(
       balldontlieApiKey,
       startDate,
       endDate
     );
+    mark(`balldontlie fetched games=${games.length}`);
     const nextResults = buildOfficialResultsFromGames(
       games,
       bracketTemplate.games
     );
+    mark(`results built series=${Object.keys(nextResults).length}`);
     const updatedAt = new Date().toISOString();
 
     if (latestRow) {
@@ -173,6 +188,7 @@ export default async function handler(request: Request): Promise<Response> {
           updated_at: updatedAt,
         })
         .eq("id", latestRow.id);
+      mark(`supabase update err=${updateError?.message ?? "none"}`);
 
       if (updateError) {
         throw updateError;
@@ -182,6 +198,7 @@ export default async function handler(request: Request): Promise<Response> {
         results: nextResults,
         updated_at: updatedAt,
       });
+      mark(`supabase insert err=${insertError?.message ?? "none"}`);
 
       if (insertError) {
         throw insertError;
@@ -197,6 +214,7 @@ export default async function handler(request: Request): Promise<Response> {
       results: nextResults,
     });
   } catch (error) {
+    mark(`ERROR ${error instanceof Error ? error.message : String(error)}`);
     const message = error instanceof Error ? error.message : String(error);
     return jsonResponse({ error: message }, 500);
   }
