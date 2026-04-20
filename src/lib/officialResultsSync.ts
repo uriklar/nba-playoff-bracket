@@ -27,6 +27,7 @@ export interface BalldontlieGame {
 export interface SeriesResult {
   winner: string;
   inGames: number | null;
+  wins?: Record<string, number>;
 }
 
 export interface SeriesSummary {
@@ -172,6 +173,10 @@ export function buildOfficialResultsFromGames(
     officialResults[game.gameId] = {
       winner,
       inGames: isClinched ? summary.totalGames : null,
+      wins: {
+        [normalizeTeamName(team1)]: team1Wins,
+        [normalizeTeamName(team2)]: team2Wins,
+      },
     };
   }
 

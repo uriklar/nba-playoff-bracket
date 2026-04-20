@@ -109,9 +109,21 @@ describe("officialResultsSync", () => {
     );
 
     expect(officialResults).toEqual({
-      E1v8: { winner: "Detroit Pistons", inGames: 5 },
-      E4v5: { winner: "Cleveland Cavaliers", inGames: 5 },
-      ESF1: { winner: "Detroit Pistons", inGames: 5 },
+      E1v8: {
+        winner: "Detroit Pistons",
+        inGames: 5,
+        wins: { "Detroit Pistons": 4, "Boston Celtics": 1 },
+      },
+      E4v5: {
+        winner: "Cleveland Cavaliers",
+        inGames: 5,
+        wins: { "Cleveland Cavaliers": 4, "Toronto Raptors": 1 },
+      },
+      ESF1: {
+        winner: "Detroit Pistons",
+        inGames: 5,
+        wins: { "Detroit Pistons": 4, "Cleveland Cavaliers": 1 },
+      },
     });
   });
 
@@ -122,7 +134,11 @@ describe("officialResultsSync", () => {
     );
 
     expect(officialResults).toEqual({
-      E4v5: { winner: "Cleveland Cavaliers", inGames: null },
+      E4v5: {
+        winner: "Cleveland Cavaliers",
+        inGames: null,
+        wins: { "Cleveland Cavaliers": 1, "Toronto Raptors": 0 },
+      },
     });
   });
 
@@ -148,8 +164,16 @@ describe("officialResultsSync", () => {
     );
 
     expect(officialResults).toEqual({
-      E4v5: { winner: "Cleveland Cavaliers", inGames: null },
-      E1v8: { winner: "Detroit Pistons", inGames: null },
+      E4v5: {
+        winner: "Cleveland Cavaliers",
+        inGames: null,
+        wins: { "Cleveland Cavaliers": 1, "Toronto Raptors": 0 },
+      },
+      E1v8: {
+        winner: "Detroit Pistons",
+        inGames: null,
+        wins: { "Detroit Pistons": 1, "Boston Celtics": 0 },
+      },
     });
   });
 

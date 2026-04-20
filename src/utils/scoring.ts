@@ -1,14 +1,7 @@
-import { PlayoffRound, PlayoffData } from "./types";
+import { GameResult, PlayoffRound, PlayoffData } from "./types";
 import { SCORING_CONFIG, GAME_ID_PATTERNS } from "./constants";
 
-/**
- * Determines which playoff round a game belongs to based on its ID.
- *
- * @param {string} gameId - The game identifier (e.g., "E1v8", "EWF")
- * @returns {PlayoffRound | null} The playoff round or null if invalid
- */
 export const determineRound = (gameId: string): PlayoffRound | null => {
-  // Check patterns in order from most specific to least specific
   for (const [round, pattern] of Object.entries(GAME_ID_PATTERNS)) {
     if (pattern.test(gameId)) {
       return round as PlayoffRound;
@@ -17,152 +10,136 @@ export const determineRound = (gameId: string): PlayoffRound | null => {
   return null;
 };
 
-/**
- * Calculates a score based on comparing user guesses to official results.
- * Points are awarded for correct winners and correct series lengths,
- * with different point values for each round.
- *
- * @param {PlayoffData} userGuessData - The user's guess object
- * @param {PlayoffData} officialResultsData - The official results object
- * @returns {number} The calculated score
- */
+// A series is "clinched" only when inGames is a concrete number. When inGames
+// is null the winner field is just the current leader — the series is still
+// live and no points should be awarded yet.
+function isClinched(
+  result: GameResult | undefined
+): result is GameResult & { inGames: number } {
+  return (
+    !!result &&
+    result.winner !== "TBD" &&
+    typeof result.inGames === "number"
+  );
+}
+
 export const calculateScore = (
   userGuessData: PlayoffData,
   officialResultsData: PlayoffData
 ): number => {
+  if (!userGuessData || !officialResultsData) return 0;
+
   let score = 0;
-  const roundScores: Record<PlayoffRound, { winners: number; series: number }> =
-    {
-      [PlayoffRound.FIRST_ROUND]: { winners: 0, series: 0 },
-      [PlayoffRound.CONFERENCE_SEMIFINALS]: { winners: 0, series: 0 },
-      [PlayoffRound.CONFERENCE_FINALS]: { winners: 0, series: 0 },
-      [PlayoffRound.NBA_FINALS]: { winners: 0, series: 0 },
-    };
 
-  if (!userGuessData || !officialResultsData) {
-    console.warn("Scoring requires both user guesses and official results.");
-    return 0;
-  }
-
-  // Iterate through the official results keys (games that have concluded)
   for (const gameId in officialResultsData) {
     const officialResult = officialResultsData[gameId];
     const userGuess = userGuessData[gameId];
     const round = determineRound(gameId);
 
-    // Skip if round cannot be determined or no user guess exists
-    if (
-      !round ||
-      !userGuess ||
-      !officialResult ||
-      officialResult.winner === "TBD"
-    ) {
-      continue;
-    }
+    if (!round || !userGuess || !isClinched(officialResult)) continue;
 
     const { basePoints, bonusPoints } = SCORING_CONFIG[round];
 
-    // Award points for correct winner
     if (
       userGuess.winner?.toLowerCase() === officialResult.winner.toLowerCase()
     ) {
-      console.log(`${gameId} - ${officialResult.winner}`);
       score += basePoints;
-      roundScores[round].winners++;
-
-      // Award bonus points for correct series length
       if (userGuess.inGames === officialResult.inGames) {
-        console.log(`in ${userGuess.inGames}`);
         score += bonusPoints;
-        roundScores[round].series++;
       }
     }
-  }
-
-  // Log the breakdown
-  for (const [round, scores] of Object.entries(roundScores)) {
-    console.log(`${round}:`, {
-      winners: `${scores.winners} correct (${
-        scores.winners * SCORING_CONFIG[round as PlayoffRound].basePoints
-      } pts)`,
-      series: `${scores.series} correct (${
-        scores.series * SCORING_CONFIG[round as PlayoffRound].bonusPoints
-      } pts)`,
-    });
   }
 
   return score;
 };
 
-/**
- * Calculates the maximum potential points a user can still achieve
- * based on their guesses and current official results.
- * 
- * @param {PlayoffData} userGuessData - The user's guess object
- * @param {PlayoffData} officialResultsData - The current official results
- * @returns {number} The maximum potential points
- */
+// Whether the user's predicted series length is still reachable given the
+// current state of the series.
+//
+// Predicted end state: predictedWinner reaches 4 wins, opponent reaches N-4.
+// Still reachable iff predictedWinner has ≤ 4 current wins AND opponent has
+// ≤ N-4 current wins.
+function isSeriesLengthAchievable(
+  userGuess: GameResult,
+  seriesResult: GameResult | undefined
+): boolean {
+  if (!seriesResult || seriesResult.winner === "TBD") return true;
+
+  if (typeof seriesResult.inGames === "number") {
+    return userGuess.inGames === seriesResult.inGames;
+  }
+
+  const wins = seriesResult.wins;
+  if (!wins || typeof userGuess.inGames !== "number") return true;
+
+  const predicted = userGuess.winner?.toLowerCase();
+  if (!predicted) return false;
+
+  let predictedWins = 0;
+  let opponentWins = 0;
+  let foundPredicted = false;
+  for (const [team, w] of Object.entries(wins)) {
+    if (team.toLowerCase() === predicted) {
+      predictedWins = w;
+      foundPredicted = true;
+    } else {
+      opponentWins += w;
+    }
+  }
+
+  if (!foundPredicted) return false;
+
+  const N = userGuess.inGames;
+  if (N < 4 || N > 7) return false;
+
+  return predictedWins <= 4 && opponentWins <= N - 4;
+}
+
 export const calculatePotentialPoints = (
   userGuessData: PlayoffData,
   officialResultsData: PlayoffData
 ): number => {
-  // First, get the current score
   const currentScore = calculateScore(userGuessData, officialResultsData);
-  
-  // Track eliminated teams to check if future predictions are possible
+
+  // A team is eliminated only when the series against them is clinched.
+  // Mid-series trailers can still come back.
   const eliminatedTeams = new Set<string>();
-  
-  // Track series that have official results
-  const decidedSeries = new Set<string>();
-  
-  // Process completed series to identify eliminated teams
+  const clinchedSeries = new Set<string>();
+
   for (const gameId in officialResultsData) {
     const officialResult = officialResultsData[gameId];
-    if (!officialResult || officialResult.winner === "TBD") {
-      continue;
-    }
-    
-    decidedSeries.add(gameId);
-    
-    // Find the loser by checking all userGuesses for this gameId
-    // This is a simplification, we really need the bracket structure
+    if (!isClinched(officialResult)) continue;
+
+    clinchedSeries.add(gameId);
+
     const userGuess = userGuessData[gameId];
-    if (userGuess && userGuess.winner && 
-        userGuess.winner.toLowerCase() !== officialResult.winner.toLowerCase()) {
-      // User's predicted winner was eliminated
+    if (
+      userGuess?.winner &&
+      userGuess.winner.toLowerCase() !== officialResult.winner.toLowerCase()
+    ) {
       eliminatedTeams.add(userGuess.winner.toLowerCase());
     }
   }
-  
-  // Calculate potential additional points for each undecided series
-  let potentialAdditionalPoints = 0;
-  
-  // Calculate potential points that can still be earned from undecided series
+
+  let potentialAdditional = 0;
+
   for (const gameId in userGuessData) {
-    // Skip series that already have results
-    if (decidedSeries.has(gameId)) {
-      continue;
-    }
-    
+    if (clinchedSeries.has(gameId)) continue;
+
     const userGuess = userGuessData[gameId];
     const round = determineRound(gameId);
-    
-    if (!round || !userGuess || !userGuess.winner) {
-      continue;
-    }
-    
-    // Check if user's predicted winner is eliminated
-    if (eliminatedTeams.has(userGuess.winner.toLowerCase())) {
-      // Can't get points for this prediction as the team is eliminated
-      continue;
-    }
-    
+
+    if (!round || !userGuess?.winner) continue;
+    if (eliminatedTeams.has(userGuess.winner.toLowerCase())) continue;
+
     const { basePoints, bonusPoints } = SCORING_CONFIG[round];
-    
-    // Add potential points (winner + series length)
-    potentialAdditionalPoints += basePoints + bonusPoints;
+
+    potentialAdditional += basePoints;
+
+    if (isSeriesLengthAchievable(userGuess, officialResultsData[gameId])) {
+      potentialAdditional += bonusPoints;
+    }
   }
-  
-  // Total potential points = current score + potential additional points
-  return currentScore + potentialAdditionalPoints;
+
+  return currentScore + potentialAdditional;
 };

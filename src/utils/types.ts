@@ -7,7 +7,8 @@ export enum PlayoffRound {
 
 export interface GameResult {
   winner: string;
-  inGames: number;
+  inGames: number | null;
+  wins?: Record<string, number>;
 }
 
 export interface PlayoffData {
